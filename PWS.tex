@@ -17,6 +17,11 @@
 \usepackage{listings, listings-rust}
 %Formats URL's
 \usepackage{url}
+%Draw stuff
+\usepackage{tikz}
+%For linking to images
+\usepackage{caption}
+
 \title{PWS/Meesterproef vloeistofdynamica}
 \author{Wiebe Derksen and Daniël Visser}
 
@@ -174,21 +179,12 @@ The free-slip boundary condition presumes the velocity of the fluid perpendicula
 \subsubsection{Dynamic boundary condition}
 The dynamic boundary condition assumes the pressure on the free surface must be constant.
 
-%The Finite Difference Method algorithms
-\subsection{More on the Finite Difference Method}
-There exist many approaches to the Finite Difference Method\cite{More_FDM}. In this section, we will explain the differences between some of these approaches.
+
 
 
 
 
 \newpage
-\section{Implementation}
-
-
-
-
-
-
 %Programming
 \section{Programming}
 \subsection{Grid}
@@ -223,6 +219,37 @@ let surface = unsafe{ash_window::create_surface(&instance, window)}
 let device = unsafe{get_compatible_device(&instance)}
 let swapchain = unsafe{create_swapchain(&instance,&device)}
 \end{lstlisting}
+test
+\subsection{The implementation of the finite difference method}
+\subsubsection{Odd-even decoupling}
+
+%Image
+\begin{figure}
+\begin{tikzpicture}
+%Collocated grid
+\filldraw[fill=black!10!white, draw=black] (0,0) rectangle (1,1.168);
+\node[] at (0.5,-0.2) {i-1};
+\filldraw[fill=black!10!white, draw=black] (1,0) rectangle (2,1.5);
+\node[] at (1.5,-0.2) {i};
+\filldraw[fill=black!10!white, draw=black] (2,0) rectangle (3,1.168);
+\node[] at (2.5,-0.2) {i+1};
+\node[] at (1.5,-0.8) {Using a collocated grid};
+%Staggered grid
+\filldraw[fill=black!10!white, draw=black] (4,0) rectangle (5,1.168);
+\node[] at (4.5,-0.2) {i-1};
+\filldraw[fill=black!10!white, draw=black] (5,0) rectangle (6,1.5);
+\node[] at (5.5,-0.2) {i};
+\filldraw[fill=black!10!white, draw=black] (6,0) rectangle (7,1.168);
+\node[] at (6.5,-0.2) {i+1};
+\draw [red, stealth-] (4.7, 0.5) -- (5.3, 0.5);
+\draw [red, -stealth] (5.7, 0.5) -- (6.3, 0.5);
+\node[red] at (5,-0.5) {\(v_{i}\)};
+\node[red] at (6,-0.5) {\(v_{i+1}\)};
+\node[] at (5.5,-0.8) {Using a staggered grid};
+\end{tikzpicture} \caption{} \label{Odd-even decoupling} \end{figure}
+
+%Odd-even decoupling
+The Finite Difference Method calculates the pressure and velocity at discrete grid points. We can choose ourselves which variables will be calculated at which points. It would be the most easy to store all variables at every point. Such a grid is called a collocated grid. However, as figure \ref{Odd-even decoupling} shows, there will be no fluid flow between cell i-1 and i and cell i and i+1 when the pressure in cells i-1 and i+1 is equal in such a grid. This happens because the derivative in cell i will be zero. To solve that problem we will use a staggered grid, such as in the right side of figure \ref{Odd-even decoupling}. A staggered grid consists of cells. The pressure is stored in the cell center and the velocities in the cell edges that are perpendicular to them.
 
 
 \newpage

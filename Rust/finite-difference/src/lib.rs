@@ -118,19 +118,18 @@ fn simulation_time_step(velocity_grid_x: &mut VelocityGrid, velocity_grid_y: &mu
 //Just pretend that the velocities at cell edges are equal to velocities at cell centers(the differences will be small)
 pub fn convert_velocities_to_collocated_grid_and_visualise(min_coords: [usize; 3], max_coords: [usize;3], data_grid_point_size: [usize; 3]) -> Vec<Vec<Vec<[f32;3]>>>{
     let mut step_size=[calc_step_size(max_coords[0]-min_coords[0], data_grid_point_size[0]), calc_step_size(max_coords[1]-min_coords[1], data_grid_point_size[1]), calc_step_size(max_coords[2]-min_coords[2], data_grid_point_size[2])];
-    let mut return_data: Vec<Vec<Vec<[f32, 3]>>>=vec![vec![vec![[]]; data_grid_point_size[1]]; data_grid_point_size[0]]
+    let mut return_data: Vec<Vec<Vec<[f32; 3]>>>=vec![vec![vec![[0.0; 3]; data_grid_point_size[0]]; data_grid_point_size[1]]; data_grid_point_size[0]]
     for x in 0..data_grid_point_size[0]{
         for y in 0..data_grid_point_size[1]{
             for z in 0..data_grid_point_size[2]{
-                return_data[x][y][z]=[velocity_grid_x[][][]];
+                return_data[x][y][z]=[get_velocity_at_pressure_point(velocity_grid, x, y, z)];
             }
         }
     }
+    return return_data;
 
-}
-
-fn convert_coordinate_to_other_grid(min_coords : [u32; 3], step_size : [u32; 3], step: usize, dim_number: u32){
-    return min_coords[dim]+step_size[dim]*step[dim];
+fn convert_coordinate_to_other_grid(min_coords : [usize; 3], step_size : [usize; 3], steps: usize, dim_number: usize) -> usize{
+    return min_coords[dim_number]+step_size[dim_number]*steps;
 }
 
 
@@ -225,6 +224,7 @@ fn second_order_second_spatial_derivative(f: &VelocityGrid, x:usize, y:usize, z:
     return(f.grid[x+dim[0]][y+dim[1]][z+dim[2]]-2.0*f.grid[x][y][z]+f.grid[x-dim[0]][y-dim[1]][z-dim[2]])/(GRIDELEMENTSCALE*GRIDELEMENTSCALE);
 }
 
+//Laplacian velocity grid
 fn laplacian(f: &VelocityGrid, x:usize, y:usize, z:usize)->f32{
     return second_order_second_spatial_derivative(f, x, y, z, 0)+second_order_second_spatial_derivative(f, x, y, z, 1)+second_order_second_spatial_derivative(f, x, y, z, 2);
 }
@@ -241,7 +241,7 @@ fn get_velocity_from_orthogonal_grid(orthogonal_grid: &VelocityGrid, x:usize, y:
 
 fn get_velocity_at_pressure_point(velocity_grid: VelocityGrid, x: usize, y: usize, z: usize)->f32{
     let dim= get_dimension(velocity_grid.dimension);
-    return velocity_grid[x+1][y+1][x+1]-velocity_grid[x+1-dim[0]][y+1-dim[1]][z+1-dim[2]];
+    return velocity_grid.grid[x+1][y+1][x+1]-velocity_grid.grid[x+1-dim[0]][y+1-dim[1]][z+1-dim[2]];
 }
 
 //Gives you the unit vector of the dimension with the given numer.
