@@ -1,4 +1,4 @@
-use std::{collections::hash_set::Difference, vec};
+use std::vec;
 
 //Physical constants
 const GRIDELEMENTSCALE: f32 = 0.05;//The size of a grid element in meters
@@ -48,7 +48,7 @@ fn initialize_pressure_grid(pressure_grid: &mut [[[f32; PRESSUREGRIDSIZE[2]];PRE
 
 fn simulation_time_step(velocity_grid_x: &mut VelocityGrid, velocity_grid_y: &mut VelocityGrid, velocity_grid_z: &mut VelocityGrid,  pressure_grid: &mut [[[f32; PRESSUREGRIDSIZE[2]];PRESSUREGRIDSIZE[1]];PRESSUREGRIDSIZE[0]]){
     let i:&mut i32=&mut 0;
-    while(*i<MAXITERATIONSPERTIMEFRAME){
+    while *i<MAXITERATIONSPERTIMEFRAME {
         //1) Predict u, v and w,
         let mut provisional_velocity_x = VelocityGrid{grid: vec![vec![vec![0.0;PRESSUREGRIDSIZE[2]+2]; PRESSUREGRIDSIZE[1]+2]; PRESSUREGRIDSIZE[0]+1], dimension:0};
         let mut provisional_velocity_y = VelocityGrid{grid: vec![vec![vec![0.0;PRESSUREGRIDSIZE[2]+2]; PRESSUREGRIDSIZE[1]+1]; PRESSUREGRIDSIZE[0]+2], dimension:1}; 
@@ -62,7 +62,7 @@ fn simulation_time_step(velocity_grid_x: &mut VelocityGrid, velocity_grid_y: &mu
         predict_velocity(&mut provisional_velocity_z, &velocity_grid_z, &velocity_grid_x, &velocity_grid_y, *pressure_grid);
         
         //2)Update boundary conditions(i.e. set walls)
-        setWallBoundaryConditions( &mut velocity_grid_x.grid,  &mut velocity_grid_y.grid,  &mut velocity_grid_z.grid);
+        set_wall_boundary_conditions( &mut velocity_grid_x.grid,  &mut velocity_grid_y.grid,  &mut velocity_grid_z.grid);
 
         //3)Calculate pressure
         //NOTE: When convergence is not reached velocity data from last timestep will be used for the next iteration. However, pressure data from this iteration will be used. Therefore, store the pressure data permenantly.
@@ -82,17 +82,17 @@ fn simulation_time_step(velocity_grid_x: &mut VelocityGrid, velocity_grid_y: &mu
         update_velocity_field(&mut provisional_velocity_z);
         
         //5)Update boundary values
-        setWallBoundaryConditions( &mut provisional_velocity_x.grid,  &mut provisional_velocity_y.grid,  &mut provisional_velocity_z.grid);
+        crate::set_wall_boundary_conditions( &mut provisional_velocity_x.grid,  &mut provisional_velocity_y.grid,  &mut provisional_velocity_z.grid);
         
         //6)Check convergence
-        let mut total_error=0.0;
+        let mut total_error:f32=0.0;
         for x in 0..PRESSUREGRIDSIZE[0] - 1{
             for y in 0..PRESSUREGRIDSIZE[1] - 1{
                 for z in 0..PRESSUREGRIDSIZE[2] - 1{
                     let error=first_order_central_spatial_derivative(&provisional_velocity_x, x, y, z)
                         +first_order_central_spatial_derivative(&provisional_velocity_y, x, y, z)
                         +first_order_central_spatial_derivative(&provisional_velocity_z, x, y, z);    
-                    if(error.abs()<ALLOWEDERROR){
+                    if error.abs()<ALLOWEDERROR{
                         total_error=total_error+error;
 
                     }
@@ -118,7 +118,7 @@ fn simulation_time_step(velocity_grid_x: &mut VelocityGrid, velocity_grid_y: &mu
 //Just pretend that the velocities at cell edges are equal to velocities at cell centers(the differences will be small)
 pub fn convert_velocities_to_collocated_grid_and_visualise(min_coords: [usize; 3], max_coords: [usize;3], data_grid_point_size: [usize; 3]) -> Vec<Vec<Vec<[f32;3]>>>{
     let mut step_size=[calc_step_size(max_coords[0]-min_coords[0], data_grid_point_size[0]), calc_step_size(max_coords[1]-min_coords[1], data_grid_point_size[1]), calc_step_size(max_coords[2]-min_coords[2], data_grid_point_size[2])];
-    let mut return_data: Vec<Vec<Vec<[f32; 3]>>>=vec![vec![vec![[0.0; 3]; data_grid_point_size[0]]; data_grid_point_size[1]]; data_grid_point_size[0]]
+    let mut return_data: Vec<Vec<Vec<[f32; 3]>>>=vec![vec![vec![[0.0; 3]; data_grid_point_size[0]]; data_grid_point_size[1]]; data_grid_point_size[0]];
     for x in 0..data_grid_point_size[0]{
         for y in 0..data_grid_point_size[1]{
             for z in 0..data_grid_point_size[2]{
@@ -127,17 +127,17 @@ pub fn convert_velocities_to_collocated_grid_and_visualise(min_coords: [usize; 3
         }
     }
     return return_data;
-
+}
 fn convert_coordinate_to_other_grid(min_coords : [usize; 3], step_size : [usize; 3], steps: usize, dim_number: usize) -> usize{
     return min_coords[dim_number]+step_size[dim_number]*steps;
 }
 
 
 fn calc_step_size(from_dimension: usize, to_dimension: usize)->usize{
-    return (from_dimension/to_dimension);
+    return from_dimension/to_dimension;
 }
 
-fn setWallBoundaryConditions(provisional_velocity_x: &mut Vec<Vec<Vec<f32>>>, provisional_velocity_y: &mut Vec<Vec<Vec<f32>>>, provisional_velocity_z: &mut Vec<Vec<Vec<f32>>>){
+fn set_wall_boundary_conditions(provisional_velocity_x: &mut Vec<Vec<Vec<f32>>>, provisional_velocity_y: &mut Vec<Vec<Vec<f32>>>, provisional_velocity_z: &mut Vec<Vec<Vec<f32>>>){
     //min x wall
     set_boundary_condition_in_area(provisional_velocity_x,  provisional_velocity_y,  provisional_velocity_z, [0, 0, 0], [0, PRESSUREGRIDSIZE[1]+1, PRESSUREGRIDSIZE[2]+1], [1,0,0]);
     //max x wall
