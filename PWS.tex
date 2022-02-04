@@ -86,27 +86,21 @@ The Finite Difference Method(FDM) approximates the derivatives of a function usi
 A computer cannot keep computing forever. Therefore we have to use a truncated Taylor series. The truncated Taylor series unto i=3 is given by \cite{Taylor series approximation}
 \[f(x)=f(a)+f'(a)(x-a)+\frac{f``(a)(x-a)^{2}}{2} + \frac{f^{(3)}(a)(x-a)^{3}}{6}+O(\Delta x)^{4}\]
 $O(\Delta x) ^{4}$ are the truncated terms.\cite{Big O}. Using the above formula, we can calculate $f(x+\Delta x)$ by taking a=x\cite{quantstart FDM}
-
 \begin{equation}f(x+\Delta x)=f(x)+f`(x)\Delta x + \frac{f``(x) (\Delta x)^{2}}{2}+ \frac{f^{(3)} (\Delta x)^{3}}{6} + O(\Delta x)^{4}\label{eqn:x plus deltax}\end{equation}
-
 In the same way we can calculate $f(x-\Delta x)$:
 \begin{equation}f(x- \Delta x)=f(x)-f`(x)\Delta x + \frac{f``(x)(\Delta x)^{2}}{2}-\frac{f^{(3)}(x)*(\Delta x)^{3}}{6} + O(\Delta x) ^{4} \label{eqn:x min deltax}\end{equation}
-
 Using equation \ref{eqn:x plus deltax} we can approximate f'(x):
 \[f(x+\Delta x) -f(x) = f'(x)\Delta x + O(x)^{2}\]
 \[f`(x)=\frac{f(x+\Delta x) - f(x)}{\Delta x} + O(\Delta x)\]
-
 $O(x)^{2}$ changes in $O(x)$ if it is divided by $\Delta x $. The equation above is called a first order approximation , because the lowest power in the big O is 1. The lowest power of the big O of a second order approximation is 2. $O(\Delta x)^{n}$ decreases to zero when $\Delta x$ becomes smaller, because $O(\Delta x)^{n}$ consists only of powers of $\Delta x$. The higher the lowest power, the fastest $O(\Delta x)^{n}$ declines and the better the derivative is approximated. We can calculate the second order approximation using equations \ref{eqn:x plus deltax} and \ref{eqn:x min deltax}
 \begin{equation}f'(x)=\frac{f(x+\Delta x)-f(x-\Delta x)}{2\Delta x}\label{taylor deriative}\end{equation}
 We can also use \ref{eqn:x plus deltax} and \ref{eqn:x min deltax} to calculate the second approximation of the second derivative.
 \[f''(x)=\frac{f(x+\Delta x)-2f(x)+f(x-\Delta x)}{(\Delta x)^{2}}\]
 Equation \ref{taylor deriative} can be used to turn equations \ref{NSE-x} , \ref{NSE-y} and \ref{NSE-z} into a set of equations without deriatives. The values of these equations can be calculated. 
 %TODO: check whether they are linear or not -WD
-
 %FEM
 \subsubsection{Finite Element Method(FEM)}
 The Finite Element Method(FEM) is a commonly used to solve differential equations. It has a lot of applications, CFD's being only one of them. Unlike the FDM the FEM does not solve the equations for only a few points, but for the entire domain. It does so by approximating the differential equation with linear subfunctions. The linear subfunctions will have unknown coefficients. These coefficients are put into a matrix.
-
 %FVM
 \subsubsection{Finite Volume Method(FVM)}
 The finite volume method calculates the movement of "fluid particles". These particles are discretized points of a certain volume.\cite{Finite Volume} Therefore the FVM gives the exact expression for the average value of the solution (over the hence described volume). For each volume there is a flow in (Diffusion), a flow out (Convection), a transient term(the disturbance of the volume) and a source term resulting in the formula below.
@@ -117,7 +111,6 @@ The spectral element method is a solution to the partial differentiation equatio
 %Latice Boltzmann Method
 \subsubsection{Lattice Boltzmann Method}
 The Lattice Boltzmann Method models liquids as if the liquid exists of a n number of fictive particles. The method divides the simulation in two interchanging steps, collision and streaming. The steps change the density $\rho{(\vec{x},t)}$ at position $\vec{x}$ at time t. Because the Lattice Boltzmann method works within a lattice (a grid with a n amount of points in a m number of dimensions), you can draw up a formula $f_{i}(\vec{x},t)$. In this formula $f_{i}$ is the the influence of a neighbouring point i on $\vec{x}$ (a point on the lattice). The total movement vector in a point then becomes: \[P_{i}(\vec{x},t) = \sum_{i=0}^{a}f_{i}(\vec{x},t)\] Where a is the number of adjacent points on the lattice and P the total movement of the particle.
-
 \paragraph{Collision} %Misschien handig om uit te leggen wat een lattice is. 
 For simulating the collision of particles within the lattice, the formula is \cite{Lattice Boltzmann implementation}:
 \[f_{i}(\vec{x}, t + \delta_t) = f_{i}(\vec{x}, t) + \frac{f_{i}^{eq}(\vec{x},t) - f_{i}(\vec{x},t)}{\tau_{f}}\]
@@ -127,7 +120,6 @@ $\tau_{f}$ is a constant that depends on the viscosity of the simulated liquid. 
 For simulating the actual movement of the particles the formula is: 
 \[f_{i}(\vec{x}+\vec{e_i},t + \delta_t) = f_{i}(\vec{x},t)\]
 Here $f_{i}(\vec{x}+\vec{e_i},t + \delta_t)$ is the fluid density at point $\vec{x}$ and $\vec{e}$ is the movement vector(the change in perceived density) of the density.
-
 %Boundary Element Method
 \subsubsection{Boundary Element Method}
 The boundary element method is a method of simulating fluid dynamics with the presence of a influence of the boundary of the simulation, on the simulation. For this reason the boundary element method is quite complex and not really in the scope of this project. \cite{Boundary Element Method}
@@ -137,12 +129,10 @@ Apart from the above mentioned methods, there are also turbulence methods. These
 %Some Choices
 \subsection{Some Choices}
 Due to the finite difference method being relatively easy to implement, we have decided to start our simulation by implementing that method. For a programming language we have chosen (provisionally) for Rust as it is fast and reasonably easy.
-
 %Neglections
 \subsection{Neglections in the Navier Stokes Equations}
 \subsubsection{The dimension}
 It is easier for computers to solve a 2D problem than a 3D problem, because for a 2D problem the number of grid points is smaller then for a 3D problem. For example, a 10 by 10 grid contains 100 points, while a 10 by 10 by 10 grid contains 1000 points. Furthermore, 2D rendering is easier then 3D rendering. However, nowadays computers are very fast. Therefore, our computers will be able to solve 3D problems. Since we intend to simulate a container with water, we will do a 3D simulation.
-
 \subsubsection{Compressible and incompressible Navier Stokes Equations}
 All fluids can be compressed. Their volume gets smaller when the pressure on the gas or fluid increases. However, in many cases the change in volume is not significant, then the flows can be approximated as incompressible flows. The Navier Stokes Equations can be simplified to the incompressible Navier Stokes Equations when a fluid is not compressible. Water is not very compressible\cite{NSE features}, so we will use the incompressible Navier Stokes Equations. The incompressible Navier Stokes equations for a Newtonian fluid, such as water, are:\cite{Navier Stokes incompressible} \cite{NASA NSE}
 \begin{equation}
@@ -155,35 +145,21 @@ All fluids can be compressed. Their volume gets smaller when the pressure on the
 \label{NSE compressible}
 \end{equation}
 The equation at the top is called the continuity equation. The others are the momentum equations.
-
 \subsubsection{Viscosity}
 All fluids have viscosity. But, like compressibility, it can be neglected sometimes. Viscosity is: \(\eta=\frac{F/A}{dv_{x}/dz }\). Here F is the shear force, that is the force parallel to a surface. A is the surface and \(dv_{x}/dz\) is the change in velocity.\cite{Viscosity}. We will not neglect viscosity, because we do intend to simulate a water container with boundaries and viscosity is important near the boundaries, because there is dissipation over there.\cite{NSE features} Dissipation is the conversion of some for of energy to heat energy\cite{Dissipation}. Without viscosity the Navier Stokes Equations reduce to the Euler Equations\cite{NSE features}.
-
 \subsubsection{Laminar and Turbulent flows}
 Flows can be either laminar or turbulent\cite{NSE features}. In laminar flows there is no disruption between adjacent layers, but in turbulent flows there is. Turbulent flows have chaotic paths and they swirl. The Navier Stokes Equations for laminar and turbulent flows are the same. But there are very small changes in pressure, velocity and temperature in turbulent flows, which should be dealt with. Although a turbulent flow can be modelled using the Navier Stokes Equations, this costs a lot of computation power due to the small changes.\cite{Turbulence} Therefore, they are often modelled in another way. The simulation of turbulent flows is beyond the scope of this project.
-
 \subsubsection{Steady and unsteady} \label{(un)steady}
 A flow is either steady or unsteady\cite{NSE features}. In a steady flow parameters, such as velocity, do not change over time. In a unsteady flow parameters can change over time.\cite{Steady and unsteady} We will simulate a unsteady flow, because we want that the water in the container is able to move.
-
-
 %Boundary conditions
 \subsection{Boundary conditions}
 To solve a partial differential equation it is necessary to enforce boundary conditions. A container with water has two types of boundaries. One type are the walls and the floor. The other is the free surface of the water. The free surface is the surface where the water and air touch each other. The boundary condition at the free surface is trickier than that at the walls and floor, since the free surface can move, while the walls and floors can not. 
-
 \subsubsection{No-slip boundary condition}
 The no-slip boundary conditition supposes the velocity of a fluid that touches a solid is equal to the velocity of the solid \cite{no-slip boundary condition}.
-
 \subsubsection{Free slip boundary condition}
 The free-slip boundary condition presumes the velocity of the fluid perpendicular to the wall is zero, so the fluid can not move through the wall. But, it does not restrict the velocity parallel to the wall.\cite{free slip boundary condition} 
-
 \subsubsection{Dynamic boundary condition}
 The dynamic boundary condition assumes the pressure on the free surface must be constant.
-
-
-
-
-
-
 \newpage
 %Programming
 \section{Programming}
@@ -222,7 +198,6 @@ let swapchain = unsafe{create_swapchain(&instance,&device)}
 test
 \subsection{The implementation of the finite difference method}
 \subsubsection{Odd-even decoupling}
-
 %Image
 \begin{figure}
 \begin{tikzpicture}
@@ -247,13 +222,9 @@ test
 \node[red] at (6,-0.5) {\(v_{i+1}\)};
 \node[] at (5.5,-0.8) {Using a staggered grid};
 \end{tikzpicture} \caption{} \label{Odd-even decoupling} \end{figure}
-
 %Odd-even decoupling
 The Finite Difference Method calculates the pressure and velocity at discrete grid points. We can choose ourselves which variables will be calculated at which points. It would be the most easy to store all variables at every point. Such a grid is called a collocated grid. However, as figure \ref{Odd-even decoupling} shows, there will be no fluid flow between cell i-1 and i and cell i and i+1 when the pressure in cells i-1 and i+1 is equal in such a grid. This happens because the derivative in cell i will be zero. To solve that problem we will use a staggered grid, such as in the right side of figure \ref{Odd-even decoupling}. A staggered grid consists of cells. The pressure is stored in the cell center and the velocities in the cell edges that are perpendicular to them.
-
-
 \newpage
-
 %Eind PWS, start bronnenlijst
 \begin{thebibliography}{3}
 \bibitem{Discretization types}
@@ -315,4 +286,4 @@ The Finite Difference Method calculates the pressure and velocity at discrete gr
 https://vulkan-tutorial.com/
 \end{thebibliography}
 \end{document}
-
+$$

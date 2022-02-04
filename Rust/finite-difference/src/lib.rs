@@ -251,9 +251,3 @@ fn get_dimension(dimension_number:usize)->[usize; 3]{
     dim[dimension_number]=1;
     return dim;
 }
-
-
-
-    
-
-
