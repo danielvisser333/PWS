@@ -195,11 +195,17 @@ let surface = unsafe{ash_window::create_surface(&instance, window)}
 let device = unsafe{get_compatible_device(&instance)}
 let swapchain = unsafe{create_swapchain(&instance,&device)}
 \end{lstlisting}
-test
+
+
+
+
+
 \subsection{The implementation of the finite difference method}
 \subsubsection{Odd-even decoupling}
+
 %Image
-\begin{figure}
+\begin{figure}[h]
+\centering
 \begin{tikzpicture}
 %Collocated grid
 \filldraw[fill=black!10!white, draw=black] (0,0) rectangle (1,1.168);
@@ -221,9 +227,21 @@ test
 \node[red] at (5,-0.5) {\(v_{i}\)};
 \node[red] at (6,-0.5) {\(v_{i+1}\)};
 \node[] at (5.5,-0.8) {Using a staggered grid};
-\end{tikzpicture} \caption{} \label{Odd-even decoupling} \end{figure}
+\end{tikzpicture} \caption{Collocated and staggered grids} \label{Odd-even decoupling} \end{figure}
 %Odd-even decoupling
-The Finite Difference Method calculates the pressure and velocity at discrete grid points. We can choose ourselves which variables will be calculated at which points. It would be the most easy to store all variables at every point. Such a grid is called a collocated grid. However, as figure \ref{Odd-even decoupling} shows, there will be no fluid flow between cell i-1 and i and cell i and i+1 when the pressure in cells i-1 and i+1 is equal in such a grid. This happens because the derivative in cell i will be zero. To solve that problem we will use a staggered grid, such as in the right side of figure \ref{Odd-even decoupling}. A staggered grid consists of cells. The pressure is stored in the cell center and the velocities in the cell edges that are perpendicular to them.
+The Finite Difference Method calculates the pressure and velocity at discrete grid points. We can choose ourselves which variables will be calculated at which points. It would be the most easy to store all variables at every point. Such a grid is called a collocated grid\cite{Staggered grid}. However, as figure \ref{Odd-even decoupling} shows, there will be no fluid flow between cell i-1 and i and cell i and i+1 when the pressure in cells i-1 and i+1 is equal in such a grid. This phenomenom is called odd-even decoupling and happens because the derivative in cell i will be zero\cite{Staggered grid}. It is called so because information from odd and even cells are not combined properly\cite{Staggered grid}. To solve that problem we will use a staggered grid, such as in the right side of figure \ref{Odd-even decoupling}. A staggered grid consists of cells. The pressure is stored in the cell center and the velocities in the cell edges that are perpendicular to them\cite{Staggered grid}. As one can see, the derivatives will not be zero anymore, since the flow between two cells will not depend on the pressure in other cells anymore.
+
+\subsubsection{The sizes of the grids}
+\begin{figure}[h]
+\centering
+% body of the figure
+\begin{tikzpicture}
+\draw[step=1cm,gray,very thin] (0,0) grid (3,3);
+\end{tikzpicture}
+\caption{Grid dimensions}
+\end{figure}
+
+If we were using a collocated grid we would store our data in an array with the desired dimension. However, we are using a staggered grid. This complicates the grid sizes a lot. We will have to use three seperate grids for velocity with different sizes and another grid for the pressure.
 \newpage
 %Eind PWS, start bronnenlijst
 \begin{thebibliography}{3}
@@ -282,6 +300,11 @@ The Finite Difference Method calculates the pressure and velocity at discrete gr
 \bibitem{NASA NSE}
 \url{https://www.grc.nasa.gov/WWW/k-12/airplane/nseqs.html}
 %End of Navier Stokes
+%Projection method
+\bibitem{Staggered grid}
+\url{https://www.youtube.com/watch?v=Kf_RHzaqFBc}
+\bibitem{MAC}
+\url{https://www.youtube.com/watch?v=0qtvRjuTihY}
 \bibitem{Vulkan}
 https://vulkan-tutorial.com/
 \end{thebibliography}
