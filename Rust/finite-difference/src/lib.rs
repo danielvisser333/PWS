@@ -14,9 +14,9 @@ const ALLOWEDERROR: f32=0.00001;
 //Pressure is measured in Pascal, because it is the standard SI unit for pressure.
 
 //Grid size(e.g. number of elements in each dimension)
-const PRESSUREGRIDSIZE: [usize; 3] = [3,3,3];//x,y,z
+const PRESSUREGRIDSIZE: [usize; 3] = [10,10,10];//x,y,z
 
-struct VelocityGrid{
+pub struct VelocityGrid{
     grid: Vec<Vec<Vec<f32>>>,
     dimension: usize,
 }
@@ -112,20 +112,20 @@ fn simulation_time_step(velocity_grid_x: &mut VelocityGrid, velocity_grid_y: &mu
         println!("i is {}", i);
     }  
     println!("Finished! At (2,2,2) velocity is ({}, {}, {})",velocity_grid_x.grid[2][2][2], velocity_grid_y.grid[2][2][2],velocity_grid_z.grid[2][2][2]);
-
+    let a= convert_velocities_to_collocated_grid_and_visualise([0,0,0], PRESSUREGRIDSIZE, [5,5,5], velocity_grid_x, velocity_grid_y, velocity_grid_z);
 }
 
-//Just pretend that the velocities at cell edges are equal to velocities at cell centers(the differences will be small)
-pub fn convert_velocities_to_collocated_grid_and_visualise(min_coords: [usize; 3], max_coords: [usize;3], data_grid_point_size: [usize; 3]) -> Vec<Vec<Vec<[f32;3]>>>{
+pub fn convert_velocities_to_collocated_grid_and_visualise(min_coords: [usize; 3], max_coords: [usize;3], data_grid_point_size: [usize; 3], velocity_grid_x: &VelocityGrid, velocity_grid_y: &VelocityGrid, velocity_grid_z: &VelocityGrid) -> Vec<Vec<Vec<[f32;3]>>>{
     let mut step_size=[calc_step_size(max_coords[0]-min_coords[0], data_grid_point_size[0]), calc_step_size(max_coords[1]-min_coords[1], data_grid_point_size[1]), calc_step_size(max_coords[2]-min_coords[2], data_grid_point_size[2])];
     let mut return_data: Vec<Vec<Vec<[f32; 3]>>>=vec![vec![vec![[0.0; 3]; data_grid_point_size[0]]; data_grid_point_size[1]]; data_grid_point_size[0]];
     for x in 0..data_grid_point_size[0]{
         for y in 0..data_grid_point_size[1]{
             for z in 0..data_grid_point_size[2]{
-                return_data[x][y][z]=[get_velocity_at_pressure_point(velocity_grid, x, y, z), get_velocity_at_pressure_point(velocity_grid, x, y, z)];
+                return_data[x][y][z]=[get_velocity_at_pressure_point(&velocity_grid_x, x, y, z),  get_velocity_at_pressure_point(&velocity_grid_y, x, y, z), get_velocity_at_pressure_point(&velocity_grid_z, x, y, z)];
             }
         }
     }
+    //CALL VISUALISATION FUNCTION HERE
     return return_data;
 }
 fn convert_coordinate_to_other_grid(min_coords : [usize; 3], step_size : [usize; 3], steps: usize, dim_number: usize) -> usize{
@@ -239,7 +239,7 @@ fn get_velocity_from_orthogonal_grid(orthogonal_grid: &VelocityGrid, x:usize, y:
         +orthogonal_grid.grid[x+dim_from[0]-dim_to[0]][y+dim_from[1]-dim_to[1]][z+dim_from[2]-dim_to[2]]);
 }
 
-fn get_velocity_at_pressure_point(velocity_grid: VelocityGrid, x: usize, y: usize, z: usize)->f32{
+fn get_velocity_at_pressure_point(velocity_grid: &VelocityGrid, x: usize, y: usize, z: usize)->f32{
     let dim= get_dimension(velocity_grid.dimension);
     return velocity_grid.grid[x+1][y+1][x+1]-velocity_grid.grid[x+1-dim[0]][y+1-dim[1]][z+1-dim[2]];
 }
