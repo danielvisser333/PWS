@@ -29,11 +29,13 @@ impl Renderer{
         let (sender, receiver_render_thread) = std::sync::mpsc::channel();
         let (sender_render_thread, receiver) = std::sync::mpsc::channel();
         let (shutdown_sender, receiver_shutdown) = std::sync::mpsc::channel();
+        //Start the renderer on another thread
         thread_pool.spawn(move ||{
             println!("Created render thread");
             let mut event_loop : EventLoop<()> = EventLoop::new_any_thread();
             let window = Window::new(&event_loop).expect("Failed to create render window");
             let mut renderer = RenderOnThread::new(&window, debug);
+            renderer.allocator.dump_contents();
             event_loop.run_return(|event,_,control_flow|{
                 match receiver_render_thread.try_recv(){
                     Ok(task) => {
@@ -210,6 +212,7 @@ impl RenderOnThread{
             graphics_queue,graphics_command_pool,vertex_buffers,drawing_command_buffers,camera,swapchain_info,
         }
     }
+    ///Draw a new image to the screen
     pub fn draw(&mut self) -> bool{ 
         let wait_fences = [self.synchronizer.in_flight_fences[self.synchronizer.current_frame]];
         unsafe{
@@ -264,6 +267,7 @@ impl RenderOnThread{
             }
         };
     }
+    ///Recreate the image to render to (swapchain), necessary if the window gets resized
     pub fn recreate_swapchain(&mut self, window_size : PhysicalSize<u32>){
         unsafe{self.destroy_swapchain()}
         self.swapchain_info = functions::swapchain::SwapchainInfo::new(&self.instance, self.physical_device, &self.surface_loader, self.surface, window_size);
@@ -276,15 +280,18 @@ impl RenderOnThread{
         unsafe{self.recreate_command_buffers(self.swapchain_info.extent)};
         self.camera.correct_perspective(self.swapchain_info.extent);
     }
+    ///Create a new buffer to hold the matrices and apply them
     pub fn set_matrixes(&mut self, models : Vec<ModelMatrix>){
         unsafe{self.vertex_buffers[INSTANCE_BUFFERS[0]].1.destroy(&mut self.allocator)};
         self.vertex_buffers[INSTANCE_BUFFERS[0]].0 = models.len() as u32;
         self.vertex_buffers[INSTANCE_BUFFERS[0]].1 = unsafe{functions::vertex::create_object_buffer(&self.device, &mut self.allocator, models, self.graphics_command_pool, self.graphics_queue)};
         unsafe{self.recreate_command_buffers(self.swapchain_info.extent)};
     }
+    ///Update the projection and view matices
     unsafe fn update_uniform_buffer(&self, current_frame : u32, object : UniformBuffer){
         self.uniform_buffer.update_uniform_buffer(object, current_frame, &self.device);
     }
+    ///Rerecord the render commands
     unsafe fn recreate_command_buffers(&mut self, extent : Extent2D){
         self.drawing_command_buffers = functions::command::create_drawing_command_buffers(&self.device, self.graphics_command_pool, self.pipeline_layout, &self.pipelines, self.render_pass, &self.framebuffers, &self.descriptor_sets, &self.vertex_buffers, extent);
     }
@@ -304,6 +311,7 @@ impl RenderOnThread{
         self.swapchain_loader.destroy_swapchain(self.swapchain, None);
     }
 }
+///Ensure all elements of the renderer are destroyed in the right order
 impl Drop for RenderOnThread{
     fn drop(&mut self) {
         unsafe{
@@ -332,6 +340,7 @@ impl Drop for RenderOnThread{
         }
     }
 }
+///Convert the grid to the corresponding transformation matrices
 pub fn grid_to_matrices(grid : Vec<Vec<Vec<[f32;3]>>>) -> Vec<ModelMatrix>{
     let mut matrices = vec!();
 
