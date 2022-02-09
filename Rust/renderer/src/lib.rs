@@ -6,7 +6,7 @@ use std::sync::mpsc::{Sender, Receiver, TryRecvError};
 
 use allocator::{Allocator, BufferAndAllocation};
 use ash::{Entry, Instance, extensions::khr::{Surface, Swapchain}, vk::{SurfaceKHR, SwapchainKHR, ImageView, PhysicalDevice, RenderPass, ShaderModule, Framebuffer, DescriptorSetLayout, PipelineLayout, PipelineCache, DescriptorPool, DescriptorSet, Pipeline, Fence, CommandPool, Queue, CommandBuffer, PipelineStageFlags, SubmitInfo, StructureType, PresentInfoKHR, Extent2D}, Device};
-use cgmath::{Matrix4, SquareMatrix};
+use cgmath::{Matrix4, SquareMatrix, Point3, Vector3};
 use functions::{image::ImageAndView, device::QueueInfo, synchronization::Synchronizer, buffer::UniformBufferObject, swapchain::SwapchainInfo, vertex::INSTANCE_BUFFERS};
 use math::{UniformBuffer, camera::Camera, ModelMatrix};
 use rayon::{ThreadPoolBuilder, ThreadPool};
@@ -332,5 +332,21 @@ impl Drop for RenderOnThread{
     }
 }
 pub fn grid_to_matrices(grid : Vec<Vec<Vec<[f32;3]>>>) -> Vec<ModelMatrix>{
-    return vec!(ModelMatrix{matrix:Matrix4::identity()});
+    let mut matrices = vec!();
+
+    for x in 0..grid.len(){
+        for y in 0..grid[x].len(){
+            for z in 0..grid[x][y].len(){
+                let point = Vector3::new(x as f32/grid.len() as f32,y as f32/grid.len() as f32,z as f32/grid.len() as f32);
+                let vector = Vector3::new(grid[x][y][z][0], grid[x][y][z][1], grid[x][y][z][2]);
+                let translation = Matrix4::from_translation(point);
+                
+                //TODO: Rotate arrow to point to vector
+                
+                matrices.push(ModelMatrix{matrix:translation});
+            }
+        }
+    }
+    return matrices; //WARNING, this function crashes if matrices is empty
+    //return vec!(ModelMatrix{matrix:Matrix4::identity()});
 }
