@@ -89,7 +89,7 @@ pub unsafe fn create_pipelines(device : &Device, cache : PipelineCache, layout :
         s_type : StructureType::PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
         p_next : std::ptr::null(),
         flags : PipelineRasterizationStateCreateFlags::empty(),
-        cull_mode : CullModeFlags::BACK,
+        cull_mode : CullModeFlags::FRONT,
         front_face : FrontFace::COUNTER_CLOCKWISE,
         depth_bias_clamp : 0.0,
         depth_bias_constant_factor : 0.0,

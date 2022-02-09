@@ -83,7 +83,7 @@ pub unsafe fn create_drawing_command_buffers(device : &Device, command_pool : Co
             device.cmd_bind_vertex_buffers(command_buffer, 0, &vertex_buffers_draw, &[0,0]);
             device.cmd_bind_index_buffer(command_buffer, vertex_buffers[INDEX_BUFFERS[j]].1.buffer, 0, IndexType::UINT32);
             device.cmd_bind_descriptor_sets(command_buffer, PipelineBindPoint::GRAPHICS, pipeline_layout, 0, &[descriptor_sets[i]], &[]);
-            device.cmd_draw_indexed(command_buffer,vertex_buffers[INDEX_BUFFERS[j]].0, vertex_buffers[VERTEX_BUFFERS[j]].0, 0, 0, 0);
+            device.cmd_draw_indexed(command_buffer,vertex_buffers[INDEX_BUFFERS[j]].0, vertex_buffers[INSTANCE_BUFFERS[0]].0, 0, 0, 0);
         }
         device.cmd_bind_pipeline(command_buffer, PipelineBindPoint::GRAPHICS, pipelines[1]);
         for j in 0..GRID_BUFFERS.len(){

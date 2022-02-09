@@ -7,7 +7,7 @@ use std::sync::mpsc::{Sender, Receiver, TryRecvError};
 use allocator::{Allocator, BufferAndAllocation};
 use ash::{Entry, Instance, extensions::khr::{Surface, Swapchain}, vk::{SurfaceKHR, SwapchainKHR, ImageView, PhysicalDevice, RenderPass, ShaderModule, Framebuffer, DescriptorSetLayout, PipelineLayout, PipelineCache, DescriptorPool, DescriptorSet, Pipeline, Fence, CommandPool, Queue, CommandBuffer, PipelineStageFlags, SubmitInfo, StructureType, PresentInfoKHR, Extent2D}, Device};
 use cgmath::{Matrix4, SquareMatrix};
-use functions::{image::ImageAndView, device::QueueInfo, synchronization::Synchronizer, buffer::UniformBufferObject, swapchain::SwapchainInfo};
+use functions::{image::ImageAndView, device::QueueInfo, synchronization::Synchronizer, buffer::UniformBufferObject, swapchain::SwapchainInfo, vertex::INSTANCE_BUFFERS};
 use math::{UniformBuffer, camera::Camera, ModelMatrix};
 use rayon::{ThreadPoolBuilder, ThreadPool};
 use winit::{event_loop::{EventLoop, ControlFlow}, window::Window, event::{Event, WindowEvent, StartCause, VirtualKeyCode, DeviceEvent, MouseScrollDelta, MouseButton, ElementState}, dpi::PhysicalSize};
@@ -276,9 +276,9 @@ impl RenderOnThread{
         self.camera.correct_perspective(self.swapchain_info.extent);
     }
     pub fn set_matrixes(&mut self, models : Vec<ModelMatrix>){
-        unsafe{self.vertex_buffers[2].1.destroy(&mut self.allocator)};
-        self.vertex_buffers[2].0 = models.len() as u32;
-        self.vertex_buffers[2].1 = unsafe{functions::vertex::create_object_buffer(&self.device, &mut self.allocator, models, self.graphics_command_pool, self.graphics_queue)};
+        unsafe{self.vertex_buffers[INSTANCE_BUFFERS[0]].1.destroy(&mut self.allocator)};
+        self.vertex_buffers[INSTANCE_BUFFERS[0]].0 = models.len() as u32;
+        self.vertex_buffers[INSTANCE_BUFFERS[0]].1 = unsafe{functions::vertex::create_object_buffer(&self.device, &mut self.allocator, models, self.graphics_command_pool, self.graphics_queue)};
         unsafe{self.recreate_command_buffers(self.swapchain_info.extent)};
     }
     unsafe fn update_uniform_buffer(&self, current_frame : u32, object : UniformBuffer){
