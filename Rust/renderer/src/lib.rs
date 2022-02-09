@@ -2,11 +2,11 @@ pub mod functions;
 pub mod allocator;
 pub mod math;
 
-use std::{sync::mpsc::{Sender, Receiver, TryRecvError}, time::Duration};
+use std::{sync::mpsc::{Sender, Receiver}};
 
 use allocator::{Allocator, BufferAndAllocation};
 use ash::{Entry, Instance, extensions::khr::{Surface, Swapchain}, vk::{SurfaceKHR, SwapchainKHR, ImageView, PhysicalDevice, RenderPass, ShaderModule, Framebuffer, DescriptorSetLayout, PipelineLayout, PipelineCache, DescriptorPool, DescriptorSet, Pipeline, Fence, CommandPool, Queue, CommandBuffer, PipelineStageFlags, SubmitInfo, StructureType, PresentInfoKHR, Extent2D}, Device};
-use cgmath::{Matrix4, SquareMatrix, Point3, Vector3, Matrix};
+use cgmath::{Matrix4, Vector3, Matrix};
 use functions::{image::ImageAndView, device::QueueInfo, synchronization::Synchronizer, buffer::UniformBufferObject, swapchain::SwapchainInfo, vertex::INSTANCE_BUFFERS};
 use math::{UniformBuffer, camera::Camera, ModelMatrix};
 use rayon::{ThreadPoolBuilder, ThreadPool};
@@ -19,7 +19,7 @@ const MAX_FRAMES_IN_FLIGHT : usize = 2;
 
 pub struct Renderer{
     sender : Sender<RenderTask>,
-    receiver : Receiver<RenderResult>,
+    //receiver : Receiver<RenderResult>,
     receiver_shutdown : Receiver<RenderResult>,
     thread_pool : ThreadPool,
 }
@@ -27,7 +27,7 @@ impl Renderer{
     pub fn new(debug : bool) -> Self{
         let thread_pool = ThreadPoolBuilder::new().build().expect("Failed to create threadpool");
         let (sender, receiver_render_thread) = std::sync::mpsc::channel();
-        let (sender_render_thread, receiver) = std::sync::mpsc::channel();
+        //let (sender_render_thread, receiver) = std::sync::mpsc::channel();
         let (shutdown_sender, receiver_shutdown) = std::sync::mpsc::channel();
         //Start the renderer on another thread
         thread_pool.spawn(move ||{
@@ -43,7 +43,7 @@ impl Renderer{
                             RenderTask::Draw=>{}
                             RenderTask::UpdateObjects(objects)=>{
                                 renderer.set_matrixes(objects);
-                                sender_render_thread.send(RenderResult::Success).unwrap();
+                                //sender_render_thread.send(RenderResult::Success).unwrap();
                             }
                         }
                     }
@@ -121,7 +121,7 @@ impl Renderer{
             shutdown_sender.send(RenderResult::Success).unwrap();
         });
         return Self{
-            sender,receiver,thread_pool,receiver_shutdown,
+            sender,/*receiver,*/thread_pool,receiver_shutdown,
         }
     }
     pub fn transform_grid(&self, grid : Vec<Vec<Vec<[f32;3]>>>){
