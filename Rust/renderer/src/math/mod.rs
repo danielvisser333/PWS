@@ -75,12 +75,13 @@ impl InstanceVertex{
             },
         );
     }
-    pub fn get_initial_vertex_data() -> (Vec<Self>,Vec<u32>){
-        let arrow_file = format!("{}\\arrow.obj",std::env::current_exe().unwrap().parent().unwrap().to_string_lossy());
+    pub fn get_initial_vertex_data() -> Vec<(Vec<Self>,Vec<u32>)>{
+        let arrow_file = format!("{}/arrow.obj",std::env::current_exe().unwrap().parent().unwrap().to_string_lossy());
         println!("{}",arrow_file);
         let obj = tobj::load_obj(arrow_file, &LoadOptions::default()).unwrap().0;
-        let mut vertices = vec!();
+        let mut data = vec!();
         for model in obj{
+            let mut vertices = vec!();
             let vertex_count = model.mesh.positions.len()/3;
             for i in 0..vertex_count{
                 let vertex = Self{
@@ -89,9 +90,9 @@ impl InstanceVertex{
                 };
                 vertices.push(vertex);
             }
-            return (vertices,model.mesh.indices);
+            data.push((vertices,model.mesh.indices));
         }
-        panic!();
+        return data;
     }
     
 }

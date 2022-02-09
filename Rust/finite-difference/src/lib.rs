@@ -24,7 +24,7 @@ pub struct VelocityGrid{
 }
 
 pub fn initialize_simulation(){
-    let renderer = Renderer::new(false);
+    let renderer = Renderer::new(true);
     let mut pressure_grid: [[[f32; PRESSUREGRIDSIZE[2]]; PRESSUREGRIDSIZE[1]]; PRESSUREGRIDSIZE[0]]=[[[0.0; PRESSUREGRIDSIZE[2]]; PRESSUREGRIDSIZE[1]]; PRESSUREGRIDSIZE[0]];//pressureGrid[x][y][z] is the pressure at coordinates (x,y,z)
     //The size of the velocity grid should be 1 bigger in every spatial dimension(so that's all dimensions in the array) because we use a collocated grid
     let mut velocity_x = VelocityGrid{grid: vec![vec![vec![1.0;PRESSUREGRIDSIZE[2]+2]; PRESSUREGRIDSIZE[1]+2]; PRESSUREGRIDSIZE[0]+1], dimension:0};

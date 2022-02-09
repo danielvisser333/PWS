@@ -45,12 +45,7 @@ impl Renderer{
                             }
                         }
                     }
-                    Err(error)=>{
-                        match error{
-                            TryRecvError::Disconnected=>{panic!("Failed to receive render task")}
-                            TryRecvError::Empty=>{}
-                        }
-                    }
+                    Err(_)=>{}
                 };
                 match event{
                     Event::WindowEvent{event,window_id:_}=>{

@@ -101,6 +101,36 @@ pub unsafe fn create_vertex_buffer<T>(device : &Device, allocator : &mut Allocat
     staging_buffer.destroy(allocator);
     return vertex_buffer;
 }
+pub unsafe fn create_index_buffer<T>(device : &Device, allocator : &mut Allocator, command_pool : CommandPool, queue : Queue, vertices : Vec<T>) -> BufferAndAllocation{
+    let data_size = vertices.len() * std::mem::size_of::<T>();
+    let staging_buffer = create_staging_buffer(device, allocator, data_size as u64);
+    let map_data = allocator.get_memory_map_data(&staging_buffer.allocation);
+    let data_ptr = device.map_memory(map_data.memory, map_data.offset, map_data.size, MemoryMapFlags::empty()).expect("Failed to map staging data") as *mut T;
+    data_ptr.copy_from_nonoverlapping(vertices.as_ptr(), vertices.len());
+    device.unmap_memory(map_data.memory);
+    let vertex_buffer_create_info = BufferCreateInfo{
+        s_type : StructureType::BUFFER_CREATE_INFO,
+        p_next : std::ptr::null(),
+        flags : BufferCreateFlags::empty(),
+        p_queue_family_indices : std::ptr::null(),
+        queue_family_index_count : 0,
+        sharing_mode : SharingMode::EXCLUSIVE,
+        size : (vertices.len() * std::mem::size_of::<T>()) as u64,
+        usage : BufferUsageFlags::TRANSFER_DST | BufferUsageFlags::INDEX_BUFFER,
+    };
+    let vertex_buffer = device.create_buffer(&vertex_buffer_create_info, None).expect("Failed to create vertex buffer");
+    let vertex_buffer = BufferAndAllocation::new(allocator, vertex_buffer, MemoryPropertyFlags::DEVICE_LOCAL);
+    let buffer_copies = [
+        BufferCopy{
+            size : (vertices.len() * std::mem::size_of::<T>()) as u64,
+            src_offset : 0,
+            dst_offset : 0,
+        }
+    ];
+    copy_buffer_regions(device, staging_buffer.buffer, vertex_buffer.buffer, command_pool, queue, &buffer_copies);
+    staging_buffer.destroy(allocator);
+    return vertex_buffer;
+}
 pub unsafe fn copy_vertices_to_gpu(device : &Device, allocator : &mut Allocator, command_pool : CommandPool, queue : Queue, vertices : Vec<Vertex>, vertex_buffer : &BufferAndAllocation){
     let staging_buffer = create_staging_buffer(device, allocator, (vertices.len() * std::mem::size_of::<Vertex>()) as u64);
     let map_data = allocator.get_memory_map_data(&staging_buffer.allocation);
