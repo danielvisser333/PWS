@@ -23,12 +23,13 @@ impl Camera{
         let far = 10.0;
         let fov = 70.0;
         let aspect = extent.width as f32 / extent.height as f32;
-        let projection = cgmath::perspective(
+        let mut projection = cgmath::perspective(
             Deg(fov), 
             aspect, 
             near, 
             far,
         );
+        projection[1][1] = projection[1][1] * -1.0;
         let eye = Point3::new(2.0, 2.0, 2.0);
         let center = Point3::new(0.0, 0.0, 0.0);
         let up = Vector3::new(0.0, 0.0, 1.0);
@@ -58,16 +59,10 @@ impl Camera{
     }
     pub fn mouse_movement(&mut self, delta : (f64,f64)){
         if self.left_mouse_button_pressed{
-            let alpha = Quaternion::new(0.0, self.eye.x-self.center.x, self.eye.y-self.center.y,self.eye.z-self.center.z).normalize();
-            let sin_value = (delta.0 as f32)*0.2;
-            let cos_value = (1.0-sin_value.powf(2.0)).sqrt();
-            let mut q = sin_value * alpha;
-            q.s += cos_value;
-            let beta = Quaternion::new(0.0, self.eye.x, self.eye.y, self.eye.z);
-            let eye = (q*beta*q.conjugate()).v;
-            println!("{:?}",eye);
-            self.eye = Point3::new(eye.x, eye.y, eye.z);
-            self.view = Matrix4::look_at_rh(self.eye,self.center, self.up);
+            let sin_x = cgmath::Angle::sin(Deg(delta.0 as f32));
+            let cos_x = cgmath::Angle::cos(Deg(delta.0 as f32));
+            let quat_alpha = Quaternion::new(0.0, self.eye.x-self.center.x, self.eye.y-self.center.y, self.eye.z-self.center.z).normalize();
+
         }
     }
     pub fn mouse_zoom(&mut self, delta : f32){

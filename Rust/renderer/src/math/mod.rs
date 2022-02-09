@@ -15,7 +15,7 @@ impl ModelMatrix{
         );
     }
 }
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct InstanceVertex{
     pub pos : [f32;3],
     pub color : [f32;3],
@@ -78,7 +78,7 @@ impl InstanceVertex{
     pub fn get_initial_vertex_data() -> Vec<(Vec<Self>,Vec<u32>)>{
         let arrow_file = format!("{}/arrow.obj",std::env::current_exe().unwrap().parent().unwrap().to_string_lossy());
         println!("{}",arrow_file);
-        let obj = tobj::load_obj(arrow_file, &LoadOptions::default()).unwrap().0;
+        let obj = tobj::load_obj(arrow_file, &LoadOptions{triangulate:true,..Default::default()}).unwrap().0;
         let mut data = vec!();
         for model in obj{
             let mut vertices = vec!();
@@ -88,6 +88,7 @@ impl InstanceVertex{
                     pos : [model.mesh.positions[i*3],model.mesh.positions[i*3+1],model.mesh.positions[i*3+2]],
                     color : [1.0,1.0,0.0],
                 };
+                println!("{:?}",vertex);
                 vertices.push(vertex);
             }
             data.push((vertices,model.mesh.indices));
