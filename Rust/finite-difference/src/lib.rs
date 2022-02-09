@@ -1,5 +1,7 @@
 use std::vec;
 
+use renderer::Renderer;
+
 //Physical constants
 const GRIDELEMENTSCALE: f32 = 0.05;//The size of a grid element in meters
 const TIMESTEPSIZE: f32 = 0.1;//The size of a time step size in seconds
@@ -22,6 +24,7 @@ pub struct VelocityGrid{
 }
 
 pub fn initialize_simulation(){
+    let renderer = Renderer::new(false);
     let mut pressure_grid: [[[f32; PRESSUREGRIDSIZE[2]]; PRESSUREGRIDSIZE[1]]; PRESSUREGRIDSIZE[0]]=[[[0.0; PRESSUREGRIDSIZE[2]]; PRESSUREGRIDSIZE[1]]; PRESSUREGRIDSIZE[0]];//pressureGrid[x][y][z] is the pressure at coordinates (x,y,z)
     //The size of the velocity grid should be 1 bigger in every spatial dimension(so that's all dimensions in the array) because we use a collocated grid
     let mut velocity_x = VelocityGrid{grid: vec![vec![vec![1.0;PRESSUREGRIDSIZE[2]+2]; PRESSUREGRIDSIZE[1]+2]; PRESSUREGRIDSIZE[0]+1], dimension:0};
@@ -32,7 +35,10 @@ pub fn initialize_simulation(){
     
     initialize_pressure_grid(&mut pressure_grid);
 
-    simulation_time_step(&mut velocity_x, &mut velocity_y, &mut velocity_z, &mut pressure_grid)
+    let render_data = simulation_time_step(&mut velocity_x, &mut velocity_y, &mut velocity_z, &mut pressure_grid);
+    renderer.transform_grid(render_data);
+
+    renderer.await_close_request();
 }
 
 fn initialize_pressure_grid(pressure_grid: &mut [[[f32; PRESSUREGRIDSIZE[2]];PRESSUREGRIDSIZE[1]];PRESSUREGRIDSIZE[0]]){
@@ -46,7 +52,7 @@ fn initialize_pressure_grid(pressure_grid: &mut [[[f32; PRESSUREGRIDSIZE[2]];PRE
     }
 }
 
-fn simulation_time_step(velocity_grid_x: &mut VelocityGrid, velocity_grid_y: &mut VelocityGrid, velocity_grid_z: &mut VelocityGrid,  pressure_grid: &mut [[[f32; PRESSUREGRIDSIZE[2]];PRESSUREGRIDSIZE[1]];PRESSUREGRIDSIZE[0]]){
+fn simulation_time_step(velocity_grid_x: &mut VelocityGrid, velocity_grid_y: &mut VelocityGrid, velocity_grid_z: &mut VelocityGrid,  pressure_grid: &mut [[[f32; PRESSUREGRIDSIZE[2]];PRESSUREGRIDSIZE[1]];PRESSUREGRIDSIZE[0]]) -> Vec<Vec<Vec<[f32;3]>>>{
     let i:&mut i32=&mut 0;
     while *i<MAXITERATIONSPERTIMEFRAME {
         //1) Predict u, v and w,
@@ -112,7 +118,7 @@ fn simulation_time_step(velocity_grid_x: &mut VelocityGrid, velocity_grid_y: &mu
         println!("i is {}", i);
     }  
     println!("Finished! At (2,2,2) velocity is ({}, {}, {})",velocity_grid_x.grid[2][2][2], velocity_grid_y.grid[2][2][2],velocity_grid_z.grid[2][2][2]);
-    let a= convert_velocities_to_collocated_grid_and_visualise([0,0,0], PRESSUREGRIDSIZE, [5,5,5], velocity_grid_x, velocity_grid_y, velocity_grid_z);
+    return convert_velocities_to_collocated_grid_and_visualise([0,0,0], PRESSUREGRIDSIZE, [5,5,5], velocity_grid_x, velocity_grid_y, velocity_grid_z);
 }
 
 pub fn convert_velocities_to_collocated_grid_and_visualise(min_coords: [usize; 3], max_coords: [usize;3], data_grid_point_size: [usize; 3], velocity_grid_x: &VelocityGrid, velocity_grid_y: &VelocityGrid, velocity_grid_z: &VelocityGrid) -> Vec<Vec<Vec<[f32;3]>>>{

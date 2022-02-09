@@ -7,53 +7,15 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug unit tests in library 'drawr'",
-            "cargo": {
-                "args": [
-                    "test",
-                    "--no-run",
-                    "--lib",
-                    "--package=drawr"
-                ],
-                "filter": {
-                    "name": "drawr",
-                    "kind": "lib"
-                }
-            },
-            "args": [],
-            "cwd": "${workspaceFolder}"
-        },
-        {
-            "type": "lldb",
-            "request": "launch",
-            "name": "Debug unit tests in library 'drawr-render'",
-            "cargo": {
-                "args": [
-                    "test",
-                    "--no-run",
-                    "--lib",
-                    "--package=drawr-render"
-                ],
-                "filter": {
-                    "name": "drawr-render",
-                    "kind": "lib"
-                }
-            },
-            "args": [],
-            "cwd": "${workspaceFolder}"
-        },
-        {
-            "type": "lldb",
-            "request": "launch",
-            "name": "Debug executable 'drawr-bin'",
+            "name": "Debug executable 'rust'",
             "cargo": {
                 "args": [
                     "build",
-                    "--bin=drawr-bin",
-                    "--package=drawr-bin"
+                    "--bin=rust",
+                    "--package=rust"
                 ],
                 "filter": {
-                    "name": "drawr-bin",
+                    "name": "rust",
                     "kind": "bin"
                 }
             },
@@ -63,17 +25,55 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug unit tests in executable 'drawr-bin'",
+            "name": "Debug unit tests in executable 'rust'",
             "cargo": {
                 "args": [
                     "test",
                     "--no-run",
-                    "--bin=drawr-bin",
-                    "--package=drawr-bin"
+                    "--bin=rust",
+                    "--package=rust"
                 ],
                 "filter": {
-                    "name": "drawr-bin",
+                    "name": "rust",
                     "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'finite-difference'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=finite-difference"
+                ],
+                "filter": {
+                    "name": "finite-difference",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'renderer'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=renderer"
+                ],
+                "filter": {
+                    "name": "renderer",
+                    "kind": "lib"
                 }
             },
             "args": [],
