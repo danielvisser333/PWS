@@ -2,11 +2,11 @@ pub mod functions;
 pub mod allocator;
 pub mod math;
 
-use std::sync::mpsc::{Sender, Receiver, TryRecvError};
+use std::{sync::mpsc::{Sender, Receiver, TryRecvError}, time::Duration};
 
 use allocator::{Allocator, BufferAndAllocation};
 use ash::{Entry, Instance, extensions::khr::{Surface, Swapchain}, vk::{SurfaceKHR, SwapchainKHR, ImageView, PhysicalDevice, RenderPass, ShaderModule, Framebuffer, DescriptorSetLayout, PipelineLayout, PipelineCache, DescriptorPool, DescriptorSet, Pipeline, Fence, CommandPool, Queue, CommandBuffer, PipelineStageFlags, SubmitInfo, StructureType, PresentInfoKHR, Extent2D}, Device};
-use cgmath::{Matrix4, SquareMatrix, Point3, Vector3};
+use cgmath::{Matrix4, SquareMatrix, Point3, Vector3, Matrix};
 use functions::{image::ImageAndView, device::QueueInfo, synchronization::Synchronizer, buffer::UniformBufferObject, swapchain::SwapchainInfo, vertex::INSTANCE_BUFFERS};
 use math::{UniformBuffer, camera::Camera, ModelMatrix};
 use rayon::{ThreadPoolBuilder, ThreadPool};
@@ -50,7 +50,7 @@ impl Renderer{
                 match event{
                     Event::WindowEvent{event,window_id:_}=>{
                         match event{
-                            WindowEvent::CloseRequested=>{*control_flow=ControlFlow::Exit; shutdown_sender.send(RenderResult::Success).unwrap()}
+                            WindowEvent::CloseRequested=>{*control_flow=ControlFlow::Exit;}
                             WindowEvent::KeyboardInput{device_id:_, is_synthetic:_, input}=>{
                                 if input.virtual_keycode == Some(VirtualKeyCode::F10){
                                     renderer.allocator.dump_contents();
@@ -116,6 +116,7 @@ impl Renderer{
             });
             drop(renderer);
             println!("Destroying render thread");
+            shutdown_sender.send(RenderResult::Success).unwrap();
         });
         return Self{
             sender,receiver,thread_pool,receiver_shutdown,
@@ -337,10 +338,10 @@ pub fn grid_to_matrices(grid : Vec<Vec<Vec<[f32;3]>>>) -> Vec<ModelMatrix>{
     for x in 0..grid.len(){
         for y in 0..grid[x].len(){
             for z in 0..grid[x][y].len(){
-                let point = Vector3::new(x as f32/grid.len() as f32,y as f32/grid.len() as f32,z as f32/grid.len() as f32);
+                let point = Vector3::new((x as f32+0.5)/grid.len() as f32 - 0.5,(y as f32+0.5)/grid.len() as f32 - 0.5,(z as f32+0.5)/grid.len() as f32 - 0.5);
                 let vector = Vector3::new(grid[x][y][z][0], grid[x][y][z][1], grid[x][y][z][2]);
-                let translation = Matrix4::from_translation(point);
-                
+                let mut translation = Matrix4::from_translation(point);
+                translation.swap_columns(1, 2);
                 //TODO: Rotate arrow to point to vector
                 
                 matrices.push(ModelMatrix{matrix:translation});
