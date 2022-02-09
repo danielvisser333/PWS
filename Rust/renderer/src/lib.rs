@@ -10,11 +10,11 @@ use cgmath::{Matrix4, SquareMatrix};
 use functions::{image::ImageAndView, device::QueueInfo, synchronization::Synchronizer, buffer::UniformBufferObject, swapchain::SwapchainInfo};
 use math::{UniformBuffer, camera::Camera, ModelMatrix};
 use rayon::{ThreadPoolBuilder, ThreadPool};
-use winit::{event_loop::{EventLoop, ControlFlow}, window::Window, event::{Event, WindowEvent, StartCause, VirtualKeyCode, DeviceEvent, MouseScrollDelta, MouseButton, ElementState}, dpi::PhysicalSize, platform::windows::EventLoopExtWindows};
-#[cfg(target_os="unix")]
+use winit::{event_loop::{EventLoop, ControlFlow}, window::Window, event::{Event, WindowEvent, StartCause, VirtualKeyCode, DeviceEvent, MouseScrollDelta, MouseButton, ElementState}, dpi::PhysicalSize};
+#[cfg(target_os="linux")]
 use winit::platform::{unix::EventLoopExtUnix, run_return::EventLoopExtRunReturn};
 #[cfg(target_os="windows")]
-use winit::platform::run_return::EventLoopExtRunReturn;
+use winit::platform::{run_return::EventLoopExtRunReturn,windows::EventLoopExtWindows};
 const MAX_FRAMES_IN_FLIGHT : usize = 2;
 
 pub struct Renderer{
