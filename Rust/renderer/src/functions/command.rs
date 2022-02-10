@@ -73,11 +73,6 @@ pub unsafe fn create_drawing_command_buffers(device : &Device, command_pool : Co
     
     for (i,&command_buffer) in command_buffers.iter().enumerate(){
         device.cmd_bind_pipeline(command_buffer, PipelineBindPoint::GRAPHICS, pipelines[0]);
-        /*let vertex_buffers_pass = [vertex_buffers[0].1.buffer, vertex_buffers[2].1.buffer];
-        device.cmd_bind_vertex_buffers(command_buffer, 0, &vertex_buffers_pass, &[0,0]);
-        device.cmd_bind_index_buffer(command_buffer, vertex_buffers[3].1.buffer, 0, IndexType::UINT32);
-        device.cmd_bind_descriptor_sets(command_buffer, PipelineBindPoint::GRAPHICS, pipeline_layout, 0, &[descriptor_sets[i]], &[]);
-        device.cmd_draw_indexed(command_buffer,vertex_buffers[3].0, vertex_buffers[0].0, vertex_buffers[2].0, 0, 0);*/
         for j in 0..VERTEX_BUFFERS.len(){
             let vertex_buffers_draw = [vertex_buffers[j].1.buffer, vertex_buffers[INSTANCE_BUFFERS[0]].1.buffer];
             device.cmd_bind_vertex_buffers(command_buffer, 0, &vertex_buffers_draw, &[0,0]);
@@ -92,11 +87,6 @@ pub unsafe fn create_drawing_command_buffers(device : &Device, command_pool : Co
             device.cmd_bind_descriptor_sets(command_buffer, PipelineBindPoint::GRAPHICS, pipeline_layout, 0, &[descriptor_sets[i]], &[]);
             device.cmd_draw(command_buffer, vertex_buffers[GRID_BUFFERS[j]].0, 1, 0, 0);
         }
-        /*let vertex_buffers_pass = [vertex_buffers[1].1.buffer];
-        device.cmd_bind_vertex_buffers(command_buffer, 0, &vertex_buffers_pass, &[0]);
-        device.cmd_bind_descriptor_sets(command_buffer, PipelineBindPoint::GRAPHICS, pipeline_layout, 0, &[descriptor_sets[i]], &[]);
-        device.cmd_draw(command_buffer, vertex_buffers[1].0, 1, 0, 0);*/
-    
     }
 
     end_render_pass(device, &command_buffers);
