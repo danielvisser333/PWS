@@ -351,14 +351,17 @@ pub fn grid_to_matrices(grid : Vec<Vec<Vec<[f32;3]>>>) -> Vec<ModelMatrix>{
             for z in 0..grid[x][y].len(){
                 let point = Vector3::new((x as f32+0.5)/grid.len() as f32 - 0.5,(y as f32+0.5)/grid.len() as f32 - 0.5,(z as f32+0.5)/grid.len() as f32 - 0.5);
                 let vector = Vector3::new(grid[x][y][z][0], grid[x][y][z][1], grid[x][y][z][2]).normalize();
+                //let vector = Vector3::new(0.0, 1.0, 0.0);
                 let mut translation = Matrix4::from_translation(point);
-                translation.swap_columns(1, 2);
                 //TODO: Rotate arrow to point to vector
                 let cross = NEUTRAL_ARROW_VECTOR.cross(vector);
                 let quat = Quaternion::from_sv(
                     (NEUTRAL_ARROW_VECTOR.magnitude2().powf(2.0)) * (vector.magnitude2().powf(2.0)).sqrt(), 
                     cross
                 ).normalize();
+                translation = translation*Matrix4::from(quat);
+                translation.swap_columns(1, 2);
+                matrices.push(ModelMatrix{matrix:translation});
             }
         }
     }
