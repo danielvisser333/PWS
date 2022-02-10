@@ -120,7 +120,7 @@ fn simulation_time_step(velocity_grid_x: &mut VelocityGrid, velocity_grid_y: &mu
 }
 
 pub fn convert_velocities_to_collocated_grid_and_visualise(min_coords: [usize; 3], max_coords: [usize;3], data_grid_point_size: [usize; 3], velocity_grid_x: &VelocityGrid, velocity_grid_y: &VelocityGrid, velocity_grid_z: &VelocityGrid) -> Vec<Vec<Vec<[f32;3]>>>{
-    //let mut step_size=[calc_step_size(max_coords[0]-min_coords[0], data_grid_point_size[0]), calc_step_size(max_coords[1]-min_coords[1], data_grid_point_size[1]), calc_step_size(max_coords[2]-min_coords[2], data_grid_point_size[2])];
+    let mut step_size=[calc_step_size(max_coords[0]-min_coords[0], data_grid_point_size[0]), calc_step_size(max_coords[1]-min_coords[1], data_grid_point_size[1]), calc_step_size(max_coords[2]-min_coords[2], data_grid_point_size[2])];
     let mut return_data: Vec<Vec<Vec<[f32; 3]>>>=vec![vec![vec![[0.0; 3]; data_grid_point_size[0]]; data_grid_point_size[1]]; data_grid_point_size[0]];
     for x in 0..data_grid_point_size[0]{
         for y in 0..data_grid_point_size[1]{
