@@ -8,7 +8,7 @@ use std::{sync::mpsc::{Sender, Receiver}};
 
 use allocator::{Allocator, BufferAndAllocation};
 use ash::{Entry, Instance, extensions::khr::{Surface, Swapchain}, vk::{SurfaceKHR, SwapchainKHR, ImageView, PhysicalDevice, RenderPass, ShaderModule, Framebuffer, DescriptorSetLayout, PipelineLayout, PipelineCache, DescriptorPool, DescriptorSet, Pipeline, Fence, CommandPool, Queue, CommandBuffer, PipelineStageFlags, SubmitInfo, StructureType, PresentInfoKHR, Extent2D}, Device};
-use cgmath::{Matrix4, Vector3, Matrix, Quaternion, InnerSpace, Deg};
+use cgmath::{Matrix4, Vector3, Matrix, Quaternion, InnerSpace};
 use functions::{image::ImageAndView, device::QueueInfo, synchronization::Synchronizer, buffer::UniformBufferObject, swapchain::SwapchainInfo, vertex::INSTANCE_BUFFERS};
 use math::{UniformBuffer, camera::Camera, ModelMatrix};
 use rayon::{ThreadPoolBuilder, ThreadPool};
