@@ -2,11 +2,11 @@ pub mod functions;
 pub mod allocator;
 pub mod math;
 
-use std::sync::mpsc::{Sender, Receiver, TryRecvError};
+use std::{sync::mpsc::{Sender, Receiver}};
 
 use allocator::{Allocator, BufferAndAllocation};
 use ash::{Entry, Instance, extensions::khr::{Surface, Swapchain}, vk::{SurfaceKHR, SwapchainKHR, ImageView, PhysicalDevice, RenderPass, ShaderModule, Framebuffer, DescriptorSetLayout, PipelineLayout, PipelineCache, DescriptorPool, DescriptorSet, Pipeline, Fence, CommandPool, Queue, CommandBuffer, PipelineStageFlags, SubmitInfo, StructureType, PresentInfoKHR, Extent2D}, Device};
-use cgmath::{Matrix4, SquareMatrix};
+use cgmath::{Matrix4, Vector3, Matrix};
 use functions::{image::ImageAndView, device::QueueInfo, synchronization::Synchronizer, buffer::UniformBufferObject, swapchain::SwapchainInfo, vertex::INSTANCE_BUFFERS};
 use math::{UniformBuffer, camera::Camera, ModelMatrix};
 use rayon::{ThreadPoolBuilder, ThreadPool};
@@ -19,7 +19,7 @@ const MAX_FRAMES_IN_FLIGHT : usize = 2;
 
 pub struct Renderer{
     sender : Sender<RenderTask>,
-    receiver : Receiver<RenderResult>,
+    //receiver : Receiver<RenderResult>,
     receiver_shutdown : Receiver<RenderResult>,
     thread_pool : ThreadPool,
 }
@@ -27,13 +27,15 @@ impl Renderer{
     pub fn new(debug : bool) -> Self{
         let thread_pool = ThreadPoolBuilder::new().build().expect("Failed to create threadpool");
         let (sender, receiver_render_thread) = std::sync::mpsc::channel();
-        let (sender_render_thread, receiver) = std::sync::mpsc::channel();
+        //let (sender_render_thread, receiver) = std::sync::mpsc::channel();
         let (shutdown_sender, receiver_shutdown) = std::sync::mpsc::channel();
+        //Start the renderer on another thread
         thread_pool.spawn(move ||{
             println!("Created render thread");
             let mut event_loop : EventLoop<()> = EventLoop::new_any_thread();
             let window = Window::new(&event_loop).expect("Failed to create render window");
             let mut renderer = RenderOnThread::new(&window, debug);
+            renderer.allocator.dump_contents();
             event_loop.run_return(|event,_,control_flow|{
                 match receiver_render_thread.try_recv(){
                     Ok(task) => {
@@ -41,7 +43,7 @@ impl Renderer{
                             RenderTask::Draw=>{}
                             RenderTask::UpdateObjects(objects)=>{
                                 renderer.set_matrixes(objects);
-                                sender_render_thread.send(RenderResult::Success).unwrap();
+                                //sender_render_thread.send(RenderResult::Success).unwrap();
                             }
                         }
                     }
@@ -50,7 +52,7 @@ impl Renderer{
                 match event{
                     Event::WindowEvent{event,window_id:_}=>{
                         match event{
-                            WindowEvent::CloseRequested=>{*control_flow=ControlFlow::Exit; shutdown_sender.send(RenderResult::Success).unwrap()}
+                            WindowEvent::CloseRequested=>{*control_flow=ControlFlow::Exit;}
                             WindowEvent::KeyboardInput{device_id:_, is_synthetic:_, input}=>{
                                 if input.virtual_keycode == Some(VirtualKeyCode::F10){
                                     renderer.allocator.dump_contents();
@@ -116,9 +118,10 @@ impl Renderer{
             });
             drop(renderer);
             println!("Destroying render thread");
+            shutdown_sender.send(RenderResult::Success).unwrap();
         });
         return Self{
-            sender,receiver,thread_pool,receiver_shutdown,
+            sender,/*receiver,*/thread_pool,receiver_shutdown,
         }
     }
     pub fn transform_grid(&self, grid : Vec<Vec<Vec<[f32;3]>>>){
@@ -209,6 +212,7 @@ impl RenderOnThread{
             graphics_queue,graphics_command_pool,vertex_buffers,drawing_command_buffers,camera,swapchain_info,
         }
     }
+    ///Draw a new image to the screen
     pub fn draw(&mut self) -> bool{ 
         let wait_fences = [self.synchronizer.in_flight_fences[self.synchronizer.current_frame]];
         unsafe{
@@ -263,6 +267,7 @@ impl RenderOnThread{
             }
         };
     }
+    ///Recreate the image to render to (swapchain), necessary if the window gets resized
     pub fn recreate_swapchain(&mut self, window_size : PhysicalSize<u32>){
         unsafe{self.destroy_swapchain()}
         self.swapchain_info = functions::swapchain::SwapchainInfo::new(&self.instance, self.physical_device, &self.surface_loader, self.surface, window_size);
@@ -275,15 +280,18 @@ impl RenderOnThread{
         unsafe{self.recreate_command_buffers(self.swapchain_info.extent)};
         self.camera.correct_perspective(self.swapchain_info.extent);
     }
+    ///Create a new buffer to hold the matrices and apply them
     pub fn set_matrixes(&mut self, models : Vec<ModelMatrix>){
         unsafe{self.vertex_buffers[INSTANCE_BUFFERS[0]].1.destroy(&mut self.allocator)};
         self.vertex_buffers[INSTANCE_BUFFERS[0]].0 = models.len() as u32;
         self.vertex_buffers[INSTANCE_BUFFERS[0]].1 = unsafe{functions::vertex::create_object_buffer(&self.device, &mut self.allocator, models, self.graphics_command_pool, self.graphics_queue)};
         unsafe{self.recreate_command_buffers(self.swapchain_info.extent)};
     }
+    ///Update the projection and view matices
     unsafe fn update_uniform_buffer(&self, current_frame : u32, object : UniformBuffer){
         self.uniform_buffer.update_uniform_buffer(object, current_frame, &self.device);
     }
+    ///Rerecord the render commands
     unsafe fn recreate_command_buffers(&mut self, extent : Extent2D){
         self.drawing_command_buffers = functions::command::create_drawing_command_buffers(&self.device, self.graphics_command_pool, self.pipeline_layout, &self.pipelines, self.render_pass, &self.framebuffers, &self.descriptor_sets, &self.vertex_buffers, extent);
     }
@@ -303,6 +311,7 @@ impl RenderOnThread{
         self.swapchain_loader.destroy_swapchain(self.swapchain, None);
     }
 }
+///Ensure all elements of the renderer are destroyed in the right order
 impl Drop for RenderOnThread{
     fn drop(&mut self) {
         unsafe{
@@ -331,6 +340,23 @@ impl Drop for RenderOnThread{
         }
     }
 }
+///Convert the grid to the corresponding transformation matrices
 pub fn grid_to_matrices(grid : Vec<Vec<Vec<[f32;3]>>>) -> Vec<ModelMatrix>{
-    return vec!(ModelMatrix{matrix:Matrix4::identity()});
+    let mut matrices = vec!();
+
+    for x in 0..grid.len(){
+        for y in 0..grid[x].len(){
+            for z in 0..grid[x][y].len(){
+                let point = Vector3::new((x as f32+0.5)/grid.len() as f32 - 0.5,(y as f32+0.5)/grid.len() as f32 - 0.5,(z as f32+0.5)/grid.len() as f32 - 0.5);
+                let vector = Vector3::new(grid[x][y][z][0], grid[x][y][z][1], grid[x][y][z][2]);
+                let mut translation = Matrix4::from_translation(point);
+                translation.swap_columns(1, 2);
+                //TODO: Rotate arrow to point to vector
+                
+                matrices.push(ModelMatrix{matrix:translation});
+            }
+        }
+    }
+    return matrices; //WARNING, this function crashes if matrices is empty
+    //return vec!(ModelMatrix{matrix:Matrix4::identity()});
 }

@@ -61,11 +61,20 @@ impl MemoryBlock{
                 let region = MemoryRegion{size,offset:0};
                 return Some(self.fit_region(region));
             }
+            else if i == 0 && regions.len() == 1{
+                let start_seek = region.offset+region.size;
+                let alignment_offset = (alignment - (start_seek % alignment)) % alignment;
+                let offset = start_seek + alignment_offset;
+                if self.size - offset >= size{
+                    let region = MemoryRegion{size,offset};
+                    return Some(self.fit_region(region));
+                }
+            }
             if i != 0{
                 let start_seek = regions[i-1].offset+regions[i-1].size;
                 let alignment_offset = (alignment - (start_seek % alignment)) % alignment;
                 let offset = start_seek + alignment_offset;
-                if offset >= region.offset && region.offset - offset >= size{
+                if offset <= region.offset && region.offset - offset >= size{
                     let region = MemoryRegion{
                         size,offset,
                     };
@@ -73,7 +82,7 @@ impl MemoryBlock{
                 }
             }
             if i != 0 && i == regions.len() - 1{
-                let start_seek = regions[i-1].offset+regions[i-1].size;
+                let start_seek = region.offset+region.size;
                 let alignment_offset = (alignment - (start_seek % alignment)) % alignment;
                 let offset = start_seek + alignment_offset;
                 if offset + size <= self.size{

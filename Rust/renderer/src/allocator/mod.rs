@@ -34,7 +34,7 @@ impl Allocator{
         }
     }
     pub unsafe fn destroy_allocation(&mut self, allocation : &MemoryRegionPointer){
-        self.blocks[allocation.block].as_mut().unwrap().regions.remove(allocation.region);
+        self.blocks[allocation.block].as_mut().unwrap().regions[allocation.region] = None;
     }
     fn fit_block(&mut self, block : MemoryBlock) -> usize{
         for (i,memory_block) in self.blocks.iter_mut().enumerate(){

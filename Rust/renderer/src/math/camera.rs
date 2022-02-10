@@ -1,10 +1,9 @@
 use ash::vk::Extent2D;
-use cgmath::{Matrix4, SquareMatrix, Deg, Point3, Vector3, Quaternion, InnerSpace};
+use cgmath::{Matrix4, Deg, Point3, Vector3, Quaternion, InnerSpace};
 
 use super::UniformBuffer;
 
 pub struct Camera{
-    model : Matrix4<f32>,
     view : Matrix4<f32>,
     projection : Matrix4<f32>,
     near : f32,
@@ -34,12 +33,10 @@ impl Camera{
         let center = Point3::new(0.0, 0.0, 0.0);
         let up = Vector3::new(0.0, 0.0, 1.0);
         let view = Matrix4::look_at_rh(eye,center, up);
-        let model = Matrix4::identity();
         return Self{
-            matrix : UniformBuffer{matrix:projection*view*model},
+            matrix : UniformBuffer{matrix:projection*view},
             projection,
             view,
-            model,
             near,
             far,
             fov,
@@ -50,14 +47,17 @@ impl Camera{
             left_mouse_button_pressed : false,
         }
     }
+    ///Ensure that the aspect ratio does not change the width of objects
     pub fn correct_perspective(&mut self, extent : Extent2D){
         self.aspect = extent.width as f32 / extent.height as f32;
         self.projection = cgmath::perspective(Deg(self.fov), self.aspect, self.near, self.far);
         self.projection[1][1] = self.projection[1][1] * -1.0;
     }
+    ///Set the projview matrix
     pub fn update(&mut self){
-        self.matrix.matrix=self.projection*self.view*self.model;
+        self.matrix.matrix=self.projection*self.view;
     }
+    ///Register mouse movement and update the camera
     pub fn mouse_movement(&mut self, delta : (f64,f64)){
         if self.left_mouse_button_pressed{
             let sin_x = cgmath::Angle::sin(Deg(delta.0 as f32/2.0));
@@ -71,6 +71,7 @@ impl Camera{
             self.view = Matrix4::look_at_rh(self.eye,self.center, self.up);
         }
     }
+    ///Zoom in or out
     pub fn mouse_zoom(&mut self, delta : f32){
         if self.fov + delta/100.0 < 180.0 && self.fov + delta/100.0 > 0.0{
             self.fov += delta/100.0;
