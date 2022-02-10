@@ -2,6 +2,8 @@ pub mod functions;
 pub mod allocator;
 pub mod math;
 
+const NEUTRAL_ARROW_VECTOR : Vector3<f32> = Vector3{x:0.0,y:0.0,z:1.0};
+
 use std::{sync::mpsc::{Sender, Receiver}};
 
 use allocator::{Allocator, BufferAndAllocation};
@@ -352,8 +354,11 @@ pub fn grid_to_matrices(grid : Vec<Vec<Vec<[f32;3]>>>) -> Vec<ModelMatrix>{
                 let mut translation = Matrix4::from_translation(point);
                 translation.swap_columns(1, 2);
                 //TODO: Rotate arrow to point to vector
-                
-                matrices.push(ModelMatrix{matrix:translation});
+                let cross = NEUTRAL_ARROW_VECTOR.cross(vector);
+                let quat = Quaternion::from_sv(
+                    (NEUTRAL_ARROW_VECTOR.magnitude2().powf(2.0)) * (vector.magnitude2().powf(2.0)).sqrt(), 
+                    cross
+                ).normalize();
             }
         }
     }
