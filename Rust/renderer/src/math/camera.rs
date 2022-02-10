@@ -59,6 +59,7 @@ impl Camera{
     }
     ///Register mouse movement and update the camera
     pub fn mouse_movement(&mut self, delta : (f64,f64)){
+        let delta = (-delta.0/100.0,delta.1);
         if self.left_mouse_button_pressed{
             let sin_x = cgmath::Angle::sin(Deg(delta.0 as f32/2.0));
             let cos_x = cgmath::Angle::cos(Deg(delta.0 as f32/2.0));
@@ -73,8 +74,8 @@ impl Camera{
     }
     ///Zoom in or out
     pub fn mouse_zoom(&mut self, delta : f32){
-        if self.fov + delta/100.0 < 180.0 && self.fov + delta/100.0 > 0.0{
-            self.fov += delta/100.0;
+        if self.fov + delta < 180.0 && self.fov + delta > 0.0{
+            self.fov -= delta;
             self.projection = cgmath::perspective(Deg(self.fov), self.aspect, self.near, self.far); 
             self.projection[1][1] = self.projection[1][1] * -1.0;
         };

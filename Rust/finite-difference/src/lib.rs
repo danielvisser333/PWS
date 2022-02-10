@@ -30,8 +30,6 @@ pub fn initialize_simulation(){
     let mut velocity_x = VelocityGrid{grid: vec![vec![vec![1.0;PRESSUREGRIDSIZE[2]+2]; PRESSUREGRIDSIZE[1]+2]; PRESSUREGRIDSIZE[0]+1], dimension:0};
     let mut velocity_y = VelocityGrid{grid: vec![vec![vec![0.0;PRESSUREGRIDSIZE[2]+2]; PRESSUREGRIDSIZE[1]+1]; PRESSUREGRIDSIZE[0]+2], dimension:1}; 
     let mut velocity_z = VelocityGrid{grid: vec![vec![vec![0.0;PRESSUREGRIDSIZE[2]+1]; PRESSUREGRIDSIZE[1]+2]; PRESSUREGRIDSIZE[0]+2], dimension:2}; 
-    //Store the 
-    let mut boundary_points: Vec<[f32; 3]> = Vec::new();
     
     initialize_pressure_grid(&mut pressure_grid);
 
@@ -72,13 +70,13 @@ fn simulation_time_step(velocity_grid_x: &mut VelocityGrid, velocity_grid_y: &mu
 
         //3)Calculate pressure
         //NOTE: When convergence is not reached velocity data from last timestep will be used for the next iteration. However, pressure data from this iteration will be used. Therefore, store the pressure data permenantly.
-        let lowerpartPressureEquation=6.0*TIMESTEPSIZE/DENSITY*f32::powf(GRIDELEMENTSCALE, -2.0);//The lower part of the equation is this constant.
+        let lowerpart_pressure_equation=6.0*TIMESTEPSIZE/DENSITY*f32::powf(GRIDELEMENTSCALE, -2.0);//The lower part of the equation is this constant.
         for x in 0..PRESSUREGRIDSIZE[0] - 1{
             for y in 0..PRESSUREGRIDSIZE[1] - 1{
                 for z in 0..PRESSUREGRIDSIZE[2] - 1{
                     pressure_grid[x][y][z]=pressure_grid[x][y][z]-RELEXATION*(first_order_forward_spatial_derivative(&provisional_velocity_x, x, y+1, z+1)
                     +first_order_forward_spatial_derivative(&provisional_velocity_y, x+1, y, z+1)
-                    +first_order_forward_spatial_derivative(&provisional_velocity_z, x+1, y+1, z))/lowerpartPressureEquation;
+                    +first_order_forward_spatial_derivative(&provisional_velocity_z, x+1, y+1, z))/lowerpart_pressure_equation;
                 }
             }
         }
@@ -105,7 +103,7 @@ fn simulation_time_step(velocity_grid_x: &mut VelocityGrid, velocity_grid_y: &mu
                 }
             }
         } 
-        if(total_error.abs()<ALLOWEDERROR){
+        if total_error.abs()<ALLOWEDERROR {
             velocity_grid_x.grid=provisional_velocity_x.grid.clone();
             velocity_grid_y.grid=provisional_velocity_y.grid.clone();
             velocity_grid_z.grid=provisional_velocity_z.grid.clone();
@@ -122,7 +120,7 @@ fn simulation_time_step(velocity_grid_x: &mut VelocityGrid, velocity_grid_y: &mu
 }
 
 pub fn convert_velocities_to_collocated_grid_and_visualise(min_coords: [usize; 3], max_coords: [usize;3], data_grid_point_size: [usize; 3], velocity_grid_x: &VelocityGrid, velocity_grid_y: &VelocityGrid, velocity_grid_z: &VelocityGrid) -> Vec<Vec<Vec<[f32;3]>>>{
-    let mut step_size=[calc_step_size(max_coords[0]-min_coords[0], data_grid_point_size[0]), calc_step_size(max_coords[1]-min_coords[1], data_grid_point_size[1]), calc_step_size(max_coords[2]-min_coords[2], data_grid_point_size[2])];
+    //let mut step_size=[calc_step_size(max_coords[0]-min_coords[0], data_grid_point_size[0]), calc_step_size(max_coords[1]-min_coords[1], data_grid_point_size[1]), calc_step_size(max_coords[2]-min_coords[2], data_grid_point_size[2])];
     let mut return_data: Vec<Vec<Vec<[f32; 3]>>>=vec![vec![vec![[0.0; 3]; data_grid_point_size[0]]; data_grid_point_size[1]]; data_grid_point_size[0]];
     for x in 0..data_grid_point_size[0]{
         for y in 0..data_grid_point_size[1]{

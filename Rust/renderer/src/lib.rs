@@ -6,7 +6,7 @@ use std::{sync::mpsc::{Sender, Receiver}};
 
 use allocator::{Allocator, BufferAndAllocation};
 use ash::{Entry, Instance, extensions::khr::{Surface, Swapchain}, vk::{SurfaceKHR, SwapchainKHR, ImageView, PhysicalDevice, RenderPass, ShaderModule, Framebuffer, DescriptorSetLayout, PipelineLayout, PipelineCache, DescriptorPool, DescriptorSet, Pipeline, Fence, CommandPool, Queue, CommandBuffer, PipelineStageFlags, SubmitInfo, StructureType, PresentInfoKHR, Extent2D}, Device};
-use cgmath::{Matrix4, Vector3, Matrix};
+use cgmath::{Matrix4, Vector3, Matrix, Quaternion, InnerSpace, Deg};
 use functions::{image::ImageAndView, device::QueueInfo, synchronization::Synchronizer, buffer::UniformBufferObject, swapchain::SwapchainInfo, vertex::INSTANCE_BUFFERS};
 use math::{UniformBuffer, camera::Camera, ModelMatrix};
 use rayon::{ThreadPoolBuilder, ThreadPool};
@@ -348,7 +348,7 @@ pub fn grid_to_matrices(grid : Vec<Vec<Vec<[f32;3]>>>) -> Vec<ModelMatrix>{
         for y in 0..grid[x].len(){
             for z in 0..grid[x][y].len(){
                 let point = Vector3::new((x as f32+0.5)/grid.len() as f32 - 0.5,(y as f32+0.5)/grid.len() as f32 - 0.5,(z as f32+0.5)/grid.len() as f32 - 0.5);
-                let vector = Vector3::new(grid[x][y][z][0], grid[x][y][z][1], grid[x][y][z][2]);
+                let vector = Vector3::new(grid[x][y][z][0], grid[x][y][z][1], grid[x][y][z][2]).normalize();
                 let mut translation = Matrix4::from_translation(point);
                 translation.swap_columns(1, 2);
                 //TODO: Rotate arrow to point to vector
