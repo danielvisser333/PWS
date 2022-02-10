@@ -120,7 +120,7 @@ fn simulation_time_step(velocity_grid_x: &mut VelocityGrid, velocity_grid_y: &mu
 }
 
 pub fn convert_velocities_to_collocated_grid_and_visualise(min_coords: [usize; 3], max_coords: [usize;3], data_grid_point_size: [usize; 3], velocity_grid_x: &VelocityGrid, velocity_grid_y: &VelocityGrid, velocity_grid_z: &VelocityGrid) -> Vec<Vec<Vec<[f32;3]>>>{
-    let mut step_size=[calc_step_size(max_coords[0]-min_coords[0], data_grid_point_size[0]), calc_step_size(max_coords[1]-min_coords[1], data_grid_point_size[1]), calc_step_size(max_coords[2]-min_coords[2], data_grid_point_size[2])];
+    let step_size=[calc_step_size(max_coords[0]-min_coords[0], data_grid_point_size[0]), calc_step_size(max_coords[1]-min_coords[1], data_grid_point_size[1]), calc_step_size(max_coords[2]-min_coords[2], data_grid_point_size[2])];
     let mut return_data: Vec<Vec<Vec<[f32; 3]>>>=vec![vec![vec![[0.0; 3]; data_grid_point_size[0]]; data_grid_point_size[1]]; data_grid_point_size[0]];
     for x in 0..data_grid_point_size[0]{
         for y in 0..data_grid_point_size[1]{
@@ -132,9 +132,9 @@ pub fn convert_velocities_to_collocated_grid_and_visualise(min_coords: [usize; 3
     //CALL VISUALISATION FUNCTION HERE
     return return_data;
 }
-fn convert_coordinate_to_other_grid(min_coords : [usize; 3], step_size : [usize; 3], steps: usize, dim_number: usize) -> usize{
+/*fn convert_coordinate_to_other_grid(min_coords : [usize; 3], step_size : [usize; 3], steps: usize, dim_number: usize) -> usize{
     return min_coords[dim_number]+step_size[dim_number]*steps;
-}
+}*/
 
 
 fn calc_step_size(from_dimension: usize, to_dimension: usize)->usize{
@@ -194,7 +194,7 @@ fn set_boundary_condition_in_area(orthogonal_velocity_grid: &mut Vec<Vec<Vec<f32
         for y in min_coords[1]..max_coords[1]{
             for z in min_coords[2]..max_coords[2]{
                 orthogonal_velocity_grid[x][y][z]=0.0;
-                let a=(x as isize + transformation_to_neighbor[0])as usize;
+                //let a=(x as isize + transformation_to_neighbor[0])as usize;
                 parallel_velocity_grid_a[x][y][z]=-parallel_velocity_grid_a[(x as isize + transformation_to_neighbor[0])as usize][(y as isize + transformation_to_neighbor[1]) as usize][(z as isize+transformation_to_neighbor[2]) as usize];
                 parallel_velocity_grid_b[x][y][z]=-parallel_velocity_grid_b[(x as isize + transformation_to_neighbor[0])as usize][(y as isize + transformation_to_neighbor[1]) as usize][(z as isize+transformation_to_neighbor[2]) as usize];
             

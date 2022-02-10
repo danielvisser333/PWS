@@ -37,7 +37,6 @@ impl Renderer{
             let mut event_loop : EventLoop<()> = EventLoop::new_any_thread();
             let window = Window::new(&event_loop).expect("Failed to create render window");
             let mut renderer = RenderOnThread::new(&window, debug);
-            renderer.allocator.dump_contents();
             event_loop.run_return(|event,_,control_flow|{
                 match receiver_render_thread.try_recv(){
                     Ok(task) => {
