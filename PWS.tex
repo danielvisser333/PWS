@@ -142,7 +142,7 @@ All fluids can be compressed. Their volume gets smaller when the pressure on the
 &\left(\frac{\partial v_{\mathrm{y}}}{\partial t}+\frac{\partial v_{\mathrm{y}}}{\partial x} v_{\mathrm{x}}+\frac{\partial v_{\mathrm{y}}}{\partial y} v_{\mathrm{y}}+\frac{\partial v_{\mathrm{y}}}{\partial z} v_{\mathrm{z}}\right) \rho=-\frac{\partial p}{\partial y}+\eta\left(\frac{\partial^{2} v_{\mathrm{y}}}{\partial x^{2}}+\frac{\partial^{2} v_{\mathrm{y}}}{\partial y^{2}}+\frac{\partial^{2} v_{\mathrm{y}}}{\partial z^{2}}\right)+\rho g_{\mathrm{y}}\\
 &\left . \left(\frac{\partial v_{\mathrm{z}}}{\partial t}+\frac{\partial v_{\mathrm{z}}}{\partial x} v_{\mathrm{x}}+\frac{\partial v_{\mathrm{z}}}{\partial y} v_{\mathrm{y}}+\frac{\partial v_{\mathrm{z}}}{\partial z} v_{\mathrm{z}}\right) \rho=-\frac{\partial p}{\partial z}+\eta\left(\frac{\partial^{2} v_{\mathrm{z}}}{\partial x^{2}}+\frac{\partial^{2} v_{\mathrm{z}}}{\partial y^{2}}+\frac{\partial^{2} v_{\mathrm{z}}}{\partial z^{2}}\right)+\rho g_{\mathrm{z}}\right .
 \end{aligned}
-\label{NSE compressible}
+\label{NSE incompressible}
 \end{equation}
 The equation at the top is called the continuity equation. The others are the momentum equations.
 \subsubsection{Viscosity}
@@ -154,7 +154,7 @@ A flow is either steady or unsteady\cite{NSE features}. In a steady flow paramet
 %Boundary conditions
 \subsection{Boundary conditions}
 To solve a partial differential equation it is necessary to enforce boundary conditions. A container with water has two types of boundaries. One type are the walls and the floor. The other is the free surface of the water. The free surface is the surface where the water and air touch each other. The boundary condition at the free surface is trickier than that at the walls and floor, since the free surface can move, while the walls and floors can not. 
-\subsubsection{No-slip boundary condition}
+\subsubsection{No-slip boundary condition} \label{no-slip boundary condition}
 The no-slip boundary conditition supposes the velocity of a fluid that touches a solid is equal to the velocity of the solid \cite{no-slip boundary condition}.
 \subsubsection{Free slip boundary condition}
 The free-slip boundary condition presumes the velocity of the fluid perpendicular to the wall is zero, so the fluid can not move through the wall. But, it does not restrict the velocity parallel to the wall.\cite{free slip boundary condition} 
@@ -200,8 +200,8 @@ let swapchain = unsafe{create_swapchain(&instance,&device)}
 
 
 
-\subsection{The implementation of the finite difference method}
-\subsubsection{Odd-even decoupling}
+\section{The implementation of the finite difference method}
+\subsection{Odd-even decoupling}
 
 %Image
 \begin{figure}[h]
@@ -230,18 +230,128 @@ let swapchain = unsafe{create_swapchain(&instance,&device)}
 \end{tikzpicture} \caption{Collocated and staggered grids} \label{Odd-even decoupling} \end{figure}
 %Odd-even decoupling
 The Finite Difference Method calculates the pressure and velocity at discrete grid points. We can choose ourselves which variables will be calculated at which points. It would be the most easy to store all variables at every point. Such a grid is called a collocated grid\cite{Staggered grid}. However, as figure \ref{Odd-even decoupling} shows, there will be no fluid flow between cell i-1 and i and cell i and i+1 when the pressure in cells i-1 and i+1 is equal in such a grid. This phenomenom is called odd-even decoupling and happens because the derivative in cell i will be zero\cite{Staggered grid}. It is called so because information from odd and even cells are not combined properly\cite{Staggered grid}. To solve that problem we will use a staggered grid, such as in the right side of figure \ref{Odd-even decoupling}. A staggered grid consists of cells. The pressure is stored in the cell center and the velocities in the cell edges that are perpendicular to them\cite{Staggered grid}. As one can see, the derivatives will not be zero anymore, since the flow between two cells will not depend on the pressure in other cells anymore.
+\newpage
+\subsection{Boundary conditions and walls}
+\begin{figure}[ht]
+% body of the figure
+\centering
+\begin{tikzpicture}
+\draw[step=1cm,gray,thin] (0,0) grid (1,2);
+\draw [thick] (0,0) -- (0, 2);
+\draw [-stealth] (-0.3,0.5) -- (0.3, 0.5); 
+\draw [-stealth] (-0.3,1.5) -- (0.3, 1.5);
+\node[] at (0, 2.5) {$v=0$};
+\node[] at (-1, 2) {a)};
 
-\subsubsection{The sizes of the grids}
-\begin{figure}[h]
+\draw[step=1cm,gray,thin] (4,0) grid (5,2);
+\draw [thick] (4,0) -- (4, 2);
+\draw [-stealth] (4.5,-0.3) -- (4.5, 0.3); 
+\draw [-stealth] (4.5,0.7) -- (4.5, 1.3);
+\draw [-stealth] (4.5,1.7) -- (4.5, 2.3);
+\node[] at (3, 2) {b)};
+
+\draw [stealth-, red] (3.5,-0.3) -- (3.5, 0.3); 
+\draw [stealth-, red] (3.5,0.7) -- (3.5, 1.3);
+\draw [stealth-, red] (3.5,1.7) -- (3.5, 2.3);
+
+\node[] at (4, 2.5) {$\textcolor{red}{v_{imaginary}}+v_{border}=0$};
+
+\end{tikzpicture}
+
+\caption{Wall boundary conditions} \label{wall boundary conditions}
+\end{figure}
+
+The water container is surrounded by walls on all sides.  We will use a no-slip boundary conditions at the walls, as discussed in paragraph \ref{no-slip boundary condition}\cite{MAC}. This means the velocities of the water at the wall will be equal to the velocity of the wall. The wall velocity is always zero, so the velocity of the water is zero at points on the wall. Therefore, all velocity components should be zero for wall points\cite{MAC}. Unfortunately, as can be seen in figure \ref{wall boundary conditions}.a only the velocity perpendicular to the wall has points that are at the wall. However, by using an imaginary velocity outside the box we can obtain the velocity at the wall using the average\cite{MAC}:
+\[v_{wall}=\frac{v_{imaginary}+v_{border}}{2}\]
+Here v is parallel to the wall(so not necessarily in the y-direction), \(v_{wall}\) is the velocity at a wall point, \(v_{border}\) is the velocity that is closest to the certain wall point and \(v_{imaginary}\) is the imaginary velocity. We can modify the formula to obtain \(v_{imaginary}\) quite easily:
+\[\begin{split}
+&v_{wall}=0\\
+&=>\frac{v_{imaginary}+v_{border}}{2}=0\\
+&=>v_{imaginary}+v_{border}=0\\
+&=>v_{imaginary}=-v_{border}\\
+\end{split}\]
+Because of the imaginary velocity grid points, we will have to make the grid larger in some directions.\\ \\
+
+In short, whe have the following boundary conditions: \\
+1) The velocities on the edge of the box that are perpendicular to the box are zero.\\
+2) The imaginary velocities are equal to the inverse of the velocities opposite of the wall.
+
+\newpage
+\subsection{The sizes of the grids}
+\begin{figure}[ht]
 \centering
 % body of the figure
 \begin{tikzpicture}
-\draw[step=1cm,gray,very thin] (0,0) grid (3,3);
+\draw[step=2cm,gray!50!white,thin] (0,0) grid (6,6);
+
+\foreach \x in {0,1,2}
+  \foreach \y in {0,1,2}
+    \draw (2* \x cm + 1cm, 2* \y cm + 1cm) node[] {$p_{\x, \y}$};
+
+\foreach \x in {0,1,2,3}
+  \foreach \y in {0,1,2, 3, 4}
+    \draw[red] (2* \x cm, 2* \y cm - 1cm) node[] {$u_{\x, \y}$};
+
+\foreach \x in {0,1,2, 3, 4}
+  \foreach \y in {0,1,2,3}
+    \draw[green!50!black] (2* \x cm -1cm, 2* \y cm ) node[] {$v_{\x, \y}$};
+    
+
 \end{tikzpicture}
-\caption{Grid dimensions}
+\caption{A 3*3 pressure grid}
+\label{grid sizes}
 \end{figure}
 
-If we were using a collocated grid we would store our data in an array with the desired dimension. However, we are using a staggered grid. This complicates the grid sizes a lot. We will have to use three seperate grids for velocity with different sizes and another grid for the pressure.
+If we were using a collocated grid we would store our data in an array with the desired dimensions. However, we are using a staggered grid. This complicates the grid sizes a lot. We will have to use three seperate grids for velocity with different sizes and another grid for the pressure. Let u, v and w denote the velocities in respectively the x, y and z direction. The size of the pressure grid are m*n*o. In the directions that are orthogonal to the velocities of a velocity grid the size of that grid will be the size of the pressure grid plus one. We have illustrated this in figure \ref{grid sizes}. The size of the grid in the dimension that is parallel to the velocities that the grid contains is the pressure grid size plus two. The sizes in those directions are that size because of the imaginary velocties we need to store.
+
+
+
+\newpage
+\subsection{The derivatives}
+Computers can not exactly calculate the derivatives, so we will have to approximate them to solve equation \ref{NSE incompressible}. We will be using Forward Time Central Space(FTCS) for approximating the derivatives\cite{MAC}. This means we will use first order forward derivatives for time and second order central derivatives for space. We can calculate the derivative of \(u\pdv{u}{x}\), \(v\pdv{v}{y}\) and \(w\pdv{w}{x}\)  using equation \ref{taylor deriative}
+\[\begin{split}
+  u\pdv{u}{x}=& u_{i,j,k}\frac{u_{i+1,j.k}-u_{i-1,j,k}}{2\Delta x}\\
+  v\pdv{v}{y}=& v_{i,j,k}\frac{v_{i,j+1.k}-v_{i,j-1,k}}{2\Delta x}\\
+  w\pdv{w}{z}=& w_{i,j,k}\frac{w_{i,j.k+1}-w_{i,j,k-1}}{2\Delta x}
+\end{split}\]
+However, calculating the other spatial derivatives of the velocities is more complex, because we have to estimate a velocity at point (i,j,k) of a grid which is not defined at that grid point. We can however estimate those velocities by taking the average of some nearby velocties, as in figure \ref{velocity to other grid}\cite{MAC}.
+\[\begin{split}
+  v\pdv{u}{y}=\frac{v_{i,j-1,k}+v_{i+1,j-1,k}+v_{i,j,k}+v_{i+1,j,k}}{4}\frac{u_{i,j+1,k}-u_{i,j,k}}{2\Delta x}
+  w\pdv{u}{z}=\frac{v_{i,j-1,k}+v_{i+1,j-1,k}+v_{i,j,k}+v_{i+1,j,k}}{4}\frac{u_{i,j+1,k}-u_{i,j,k}}{2\Delta x}
+\end{split}
+\]
+
+\begin{figure}
+\centering
+% body of the figure
+\begin{tikzpicture}
+\draw[step=1cm,gray!50!white,thin] (0,0) grid (1,2);
+\draw [-stealth, green!50!black] (-0.3,0.5) -- (0.3, 0.5);
+\node[] at (-1, 0.5) {$\textcolor{green!50!black}{u_{i-1,j,k}}$};
+\draw [-stealth, blue] (-0.3,1.5) -- (0.3, 1.5);
+\node[] at (-1, 1.5) {$\textcolor{blue}{u_{i-1,j+1,k}}$};
+\draw [-stealth, brown] (0.7,0.5) -- (1.3, 0.5);
+\node[] at (2, 0.5) {$\textcolor{brown}{u_{i,j,k}}$};
+\draw [-stealth, orange] (0.7,1.5) -- (1.3, 1.5);
+\node[] at (2, 1.5) {$\textcolor{orange}{u_{i,j+1,k}}$};
+\draw [-stealth, red] (0.2,1) -- (0.8, 1);
+\node[] at (5, 1) {$\textcolor{red}{u_{average}}=
+\frac{\textcolor{green!50!black}{u_{i-1,j,k}}+
+\textcolor{blue}{u_{i-1,j+1,k}}+
+\textcolor{brown}{u_{i,j,k}}+
+\textcolor{orange}{u_{i,j+1,k}}}{4}
+$};
+\end{tikzpicture}
+
+\caption{average of velocity} \label{velocity to other grid}
+\end{figure}
+
+
+
+
+
+
+
 \newpage
 %Eind PWS, start bronnenlijst
 \begin{thebibliography}{3}

@@ -127,7 +127,7 @@ pub fn convert_velocities_to_collocated_grid_and_visualise(min_coords: [usize; 3
     for x in 0..data_grid_point_size[0]{
         for y in 0..data_grid_point_size[1]{
             for z in 0..data_grid_point_size[2]{
-                return_data[x][y][z]=[get_velocity_at_pressure_point(&velocity_grid_x, x, y, z),  get_velocity_at_pressure_point(&velocity_grid_y, x, y, z), get_velocity_at_pressure_point(&velocity_grid_z, x, y, z)];
+                return_data[x][y][z]=[get_velocity_at_pressure_point(&velocity_grid_x, x*step_size[0], y*step_size[1], z*step_size[2]),  get_velocity_at_pressure_point(&velocity_grid_y, x*step_size[0], y*step_size[1], z*step_size[2]), get_velocity_at_pressure_point(&velocity_grid_z, x*step_size[0], y*step_size[1], z*step_size[2])];
             }
         }
     }
