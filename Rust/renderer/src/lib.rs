@@ -129,7 +129,7 @@ impl Renderer{
         let matrices = self.thread_pool.install(||{
             return RenderTask::UpdateObjects(grid_to_matrices(grid));
         });
-        self.sender.send(matrices).expect("Failed to send matrices");
+        match self.sender.send(matrices){Ok(_)=>{}Err(_)=>{}};
     }
     pub fn await_close_request(self){
         self.receiver_shutdown.recv().unwrap();
@@ -283,6 +283,7 @@ impl RenderOnThread{
     }
     ///Create a new buffer to hold the matrices and apply them
     pub fn set_matrixes(&mut self, models : Vec<ModelMatrix>){
+        unsafe{self.device.device_wait_idle()}.expect("Failed to wait for device");
         unsafe{self.vertex_buffers[INSTANCE_BUFFERS[0]].1.destroy(&mut self.allocator)};
         self.vertex_buffers[INSTANCE_BUFFERS[0]].0 = models.len() as u32;
         self.vertex_buffers[INSTANCE_BUFFERS[0]].1 = unsafe{functions::vertex::create_object_buffer(&self.device, &mut self.allocator, models, self.graphics_command_pool, self.graphics_queue)};
@@ -351,7 +352,7 @@ pub fn grid_to_matrices(grid : Vec<Vec<Vec<[f32;3]>>>) -> Vec<ModelMatrix>{
                 let point = Vector3::new((x as f32+0.5)/grid.len() as f32 - 0.5,(y as f32+0.5)/grid.len() as f32 - 0.5,(z as f32+0.5)/grid.len() as f32 - 0.5);
                 let vector = Vector3::new(grid[x][y][z][0], grid[x][y][z][1], grid[x][y][z][2]).normalize();
                 //let vector = Vector3::new(0.0, 1.0, 0.0);
-                println!("{:?}",vector);
+                //println!("{:?}",vector);
                 println!("{},{},{}",grid[x][y][z][0], grid[x][y][z][1], grid[x][y][z][2]);
                 let mut translation = Matrix4::from_translation(point);
                 //TODO: Rotate arrow to point to vector
