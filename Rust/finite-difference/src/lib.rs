@@ -235,8 +235,8 @@ fn laplacian(f: &VelocityGrid, x:usize, y:usize, z:usize)->f32{
 
 //This function will retrieve the velocity of an orthogonal grid a grid point of another grid.
 fn get_velocity_from_orthogonal_grid(orthogonal_grid: &VelocityGrid, x:usize, y:usize, z:usize, other_grid_dimension:usize) -> f32{
-    let dim_from=get_dimension(other_grid_dimension);
-    let dim_to=get_dimension(orthogonal_grid.dimension);
+    let dim_to=get_dimension(other_grid_dimension);
+    let dim_from=get_dimension(orthogonal_grid.dimension);
     return 0.25*(orthogonal_grid.grid[x-dim_from[0]][y-dim_from[1]][z-dim_from[2]]//Left down
         +orthogonal_grid.grid[x-dim_from[0]+dim_to[0]][y-dim_from[1]+dim_to[1]][z-dim_from[2]+dim_to[2]]//left up
         +orthogonal_grid.grid[x][y][z]//right down
