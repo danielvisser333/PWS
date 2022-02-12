@@ -95,7 +95,7 @@ Using equation \ref{eqn:x plus deltax} we can approximate f'(x):
 $O(x)^{2}$ changes in $O(x)$ if it is divided by $\Delta x $. The equation above is called a first order approximation , because the lowest power in the big O is 1. The lowest power of the big O of a second order approximation is 2. $O(\Delta x)^{n}$ decreases to zero when $\Delta x$ becomes smaller, because $O(\Delta x)^{n}$ consists only of powers of $\Delta x$. The higher the lowest power, the fastest $O(\Delta x)^{n}$ declines and the better the derivative is approximated. We can calculate the second order approximation using equations \ref{eqn:x plus deltax} and \ref{eqn:x min deltax}
 \begin{equation}f'(x)=\frac{f(x+\Delta x)-f(x-\Delta x)}{2\Delta x}\label{taylor deriative}\end{equation}
 We can also use \ref{eqn:x plus deltax} and \ref{eqn:x min deltax} to calculate the second approximation of the second derivative.
-\[f''(x)=\frac{f(x+\Delta x)-2f(x)+f(x-\Delta x)}{(\Delta x)^{2}}\]
+\begin{equation}f''(x)=\frac{f(x+\Delta x)-2f(x)+f(x-\Delta x)}{(\Delta x)^{2}} \label{second derivative} \end{equation}
 Equation \ref{taylor deriative} can be used to turn equations \ref{NSE-x} , \ref{NSE-y} and \ref{NSE-z} into a set of equations without deriatives. The values of these equations can be calculated. 
 %TODO: check whether they are linear or not -WD
 %FEM
@@ -144,7 +144,7 @@ All fluids can be compressed. Their volume gets smaller when the pressure on the
 \end{aligned}
 \label{NSE incompressible}
 \end{equation}
-The equation at the top is called the continuity equation. The others are the momentum equations.
+The equation at the top is called the continuity equation. The others are the momentum equations. The parts of the left hand sides between brackets are called the convection terms. The parts on the right hand sides between brackets are called the diffusion terms. The parts involving pressure are the pressure terms and \(\rho g\) is the gravitational force.
 \subsubsection{Viscosity}
 All fluids have viscosity. But, like compressibility, it can be neglected sometimes. Viscosity is: \(\eta=\frac{F/A}{dv_{x}/dz }\). Here F is the shear force, that is the force parallel to a surface. A is the surface and \(dv_{x}/dz\) is the change in velocity.\cite{Viscosity}. We will not neglect viscosity, because we do intend to simulate a water container with boundaries and viscosity is important near the boundaries, because there is dissipation over there.\cite{NSE features} Dissipation is the conversion of some for of energy to heat energy\cite{Dissipation}. Without viscosity the Navier Stokes Equations reduce to the Euler Equations\cite{NSE features}.
 \subsubsection{Laminar and Turbulent flows}
@@ -201,7 +201,7 @@ let swapchain = unsafe{create_swapchain(&instance,&device)}
 
 
 \section{The implementation of the finite difference method}
-\subsection{Odd-even decoupling}
+\subsection{Odd-even decoupling} \label{odd-even}
 
 %Image
 \begin{figure}[h]
@@ -304,24 +304,21 @@ In short, whe have the following boundary conditions: \\
 
 If we were using a collocated grid we would store our data in an array with the desired dimensions. However, we are using a staggered grid. This complicates the grid sizes a lot. We will have to use three seperate grids for velocity with different sizes and another grid for the pressure. Let u, v and w denote the velocities in respectively the x, y and z direction. The size of the pressure grid are m*n*o. In the directions that are orthogonal to the velocities of a velocity grid the size of that grid will be the size of the pressure grid plus one. We have illustrated this in figure \ref{grid sizes}. The size of the grid in the dimension that is parallel to the velocities that the grid contains is the pressure grid size plus two. The sizes in those directions are that size because of the imaginary velocties we need to store.
 
-
-
 \newpage
-\subsection{The derivatives}
-Computers can not exactly calculate the derivatives, so we will have to approximate them to solve equation \ref{NSE incompressible}. We will be using Forward Time Central Space(FTCS) for approximating the derivatives\cite{MAC}. This means we will use first order forward derivatives for time and second order central derivatives for space. We can calculate the derivative of \(u\pdv{u}{x}\), \(v\pdv{v}{y}\) and \(w\pdv{w}{x}\)  using equation \ref{taylor deriative}
+
+
+
+
+
+\subsection{Discretising the convection term and implementing the grid}
+Computers can not exactly calculate the derivatives, so we will have to approximate them to solve equation \ref{NSE incompressible}. We will be using Forward Time Central Space(FTCS) for approximating the derivatives\cite{MAC}. This means we will use first order forward derivatives for time and second order central derivatives for space. We can calculate the convection terms \(u\pdv{u}{x}\), \(v\pdv{v}{y}\) and \(w\pdv{w}{x}\)  using equation \ref{taylor deriative}. In the equations below, one might notice that we have used \(\Delta x\) everywhere and have not used \(\Delta y\) or \(\Delta z\). We have done this because we set \(\Delta x = \Delta y = \Delta z\).
 \[\begin{split}
   u\pdv{u}{x}=& u_{i,j,k}\frac{u_{i+1,j.k}-u_{i-1,j,k}}{2\Delta x}\\
   v\pdv{v}{y}=& v_{i,j,k}\frac{v_{i,j+1.k}-v_{i,j-1,k}}{2\Delta x}\\
   w\pdv{w}{z}=& w_{i,j,k}\frac{w_{i,j.k+1}-w_{i,j,k-1}}{2\Delta x}
 \end{split}\]
-However, calculating the other spatial derivatives of the velocities is more complex, because we have to estimate a velocity at point (i,j,k) of a grid which is not defined at that grid point. We can however estimate those velocities by taking the average of some nearby velocties, as in figure \ref{velocity to other grid}\cite{MAC}.
-\[\begin{split}
-  v\pdv{u}{y}=\frac{v_{i,j-1,k}+v_{i+1,j-1,k}+v_{i,j,k}+v_{i+1,j,k}}{4}\frac{u_{i,j+1,k}-u_{i,j,k}}{2\Delta x}
-  w\pdv{u}{z}=\frac{v_{i,j-1,k}+v_{i+1,j-1,k}+v_{i,j,k}+v_{i+1,j,k}}{4}\frac{u_{i,j+1,k}-u_{i,j,k}}{2\Delta x}
-\end{split}
-\]
-
-\begin{figure}
+However, calculating the other convection terms is more complex, because we have to estimate a velocity at point (i,j,k) of a grid which is not defined at that grid point. We can however estimate those velocities by taking the average of some nearby velocties, as in figure \ref{velocity to other grid}\cite{MAC}.
+\begin{figure}[h]
 \centering
 % body of the figure
 \begin{tikzpicture}
@@ -346,12 +343,128 @@ $};
 \caption{average of velocity} \label{velocity to other grid}
 \end{figure}
 
+\[\begin{split}
+  %x velocity
+  v\pdv{u}{y}&=\frac{v_{i,j-1,k}+v_{i+1,j-1,k}+v_{i,j,k}+v_{i+1,j,k}}{4}\frac{u_{i,j+1,k}-u_{i,j-1,k}}{2\Delta x}\\
+  w\pdv{u}{z}&=\frac{w_{i,j,k-1}+w_{i+1,j,k-1}+w_{i,j,k}+w_{i+1,j,k}}{4}\frac{u_{i,j,k+1}-u_{i,j,k-1}}{2\Delta x}\\
+  %y velocity
+  u\pdv{v}{x}&=\frac{u_{i-1,j,k}+u_{i-1,j+1,k}+u_{i,j,k}+u_{i,j+1,k}}{4}\frac{v_{i+1,j,k}-v_{i-1,j,k}}{2\Delta x}\\
+  w\pdv{v}{z}&=\frac{w_{i,j,k-1}+w_{i,j+1,k-1}+w_{i,j,k}+w_{i,j+1,k}}{4}\frac{v_{i,j,k+1}-v_{i,j,k-1}}{2\Delta x}\\
+  %z-velocity
+  u\pdv{w}{x}&=\frac{u_{i-1,j,k}+u_{i-1,j,k+1}+u_{i,j,k}+u_{i,j,k+1}}{4}\frac{w_{i+1,j,k}-w_{i-1,j,k}}{2\Delta x}\\
+  v\pdv{w}{y}&=\frac{v_{i,j-1,k}+v_{i,j-1,k+1}+v_{i,j,k}+v_{i,j,k+1}}{4}\frac{w_{i,j+1,k}-w_{i,j-1,k}}{2\Delta x}\\
+\end{split}
+\] \label{average and partial}
+We do not want to use these long equations in the code everywhere, since that would be a lot of work and unclear. Therefore, we will create a function that will calculate the partial derivative and a function that will calcute the avergage velocity at at point. To do this, we first need to create a struct that stores a velocity grid and the dimension of that grid.
+
+\begin{lstlisting}[language=Rust, style=boxed, breaklines=true]
+pub struct VelocityGrid{
+    grid: Vec<Vec<Vec<f32>>>,
+    dimension: usize,
+}
+\end{lstlisting}
+As one can see, the grid is stored in a vector(Vec means vector). In Rust, a vector is an array that can have different sizes. Furthermore, the dimension of the array is stored as a usize, which basically is an integer with a maximum length that corresponds to the maximum length of an array. The values 0,1 and 2 for dimension denote the x-, y-, and z-direction respectively. To prevent the use of a lot of if-statement, we create a function that can convert the dimension number to an array for which all elements, except the element corresponding to the dimension number are zero. 
+\begin{lstlisting}[language=Rust, style=boxed, breaklines=true]
+//Gives you the unit vector of the dimension with the given numer.
+//x - 0, y - 1, z - 2
+fn get_dimension(dimension_number:usize)->[usize; 3]{
+    let mut dim = [0,0,0];
+    dim[dimension_number]=1;
+    return dim;
+}
+\end{lstlisting}
+
+Next, we define the sizes of the grid, the velocity grid sizes will depend on the pressure grid sizes, so we will define the pressure grid sizes:
+\begin{lstlisting}[language=Rust, style=boxed, breaklines=true]
+//Grid size(e.g. number of elements in each dimension)
+const PRESSUREGRIDSIZE: [usize; 3] = [10,10,10];//x,y,z
+\end{lstlisting}
+Now we can create a function for the second order spatial derivative.
+\begin{lstlisting}[language=Rust, style=boxed, breaklines=true]
+fn second_order_spatial_derivative(f:&VelocityGrid, x: usize, y:usize, z:usize, dimension_number:usize) -> f32{
+    let dim= get_dimension(dimension_number);
+    return (f.grid[x+dim[0]][y+dim[1]][z+dim[2]] - f.grid[x-dim[0]][y-dim[1]][z-dim[2]])/(2.0*GRIDELEMENTSCALE);
+}
+\end{lstlisting}
+Besides that, we can now also calculate the average velocity, as in figure \ref{velocity to other grid}.
+\begin{lstlisting}[language=Rust, style=boxed, breaklines=true]
+//This function will retrieve the velocity of an orthogonal grid a grid point of another grid.
+fn get_velocity_from_orthogonal_grid(orthogonal_grid: &VelocityGrid, x:usize, y:usize, z:usize, other_grid_dimension:usize) -> f32{
+    let dim_to=get_dimension(other_grid_dimension);
+    let dim_from=get_dimension(orthogonal_grid.dimension);
+    return 0.25*(orthogonal_grid.grid[x-dim_from[0]][y-dim_from[1]][z-dim_from[2]]//Left down
+        +orthogonal_grid.grid[x-dim_from[0]+dim_to[0]][y-dim_from[1]+dim_to[1]][z-dim_from[2]+dim_to[2]]//left up
+        +orthogonal_grid.grid[x][y][z]//right down
+        +orthogonal_grid.grid[x+dim_to[0]][y+dim_to[1]][z+dim_to[2]]);//right up
+}
+\end{lstlisting}
 
 
+\subsection{Discretising the diffusion term}
+Like the convection term, the diffusion term contains no temporal terms. Of course it varies, since it terms do vary over time, but we can calculate it using information from only one timestep. We will abreviate the diffusion term of u as \(\partial _{d}u\) and the diffusion terms of v and w in a similar way\cite{MAC}. The diffusion terms of equation \ref{NSE incompressible} are\cite{MAC}:
+\begin{equation}
+\begin{split}
+\partial _{d}u=&\eta (\pdv[2]{u}{x}+\pdv[2]{u}{y}+\pdv[2]{u}{z})\\
+\partial _{d}v=&\eta (\pdv[2]{v}{x}+\pdv[2]{v}{y}+\pdv[2]{v}{z})\\
+\partial _{d}w=&\eta (\pdv[2]{w}{x}+\pdv[2]{w}{y}+\pdv[2]{w}{z})\\
+\end{split}
+\end{equation}
+We can calculate it using equation \ref{second derivative}:
 
-
-
-
+\begin{lstlisting}[language=Rust, style=boxed, breaklines=true]
+fn second_order_second_spatial_derivative(f: &VelocityGrid, x:usize, y:usize, z:usize, dimension_number:usize) -> f32{
+    let dim = get_dimension(dimension_number);
+    return(f.grid[x+dim[0]][y+dim[1]][z+dim[2]]-2.0*f.grid[x][y][z]+f.grid[x-dim[0]][y-dim[1]][z-dim[2]])/(GRIDELEMENTSCALE*GRIDELEMENTSCALE);
+}
+\end{lstlisting}
+The sum of all three second derivatives is called the laplacian. \cite{MAC}
+\begin{lstlisting}[language=Rust, style=boxed, breaklines=true]
+//Laplacian velocity grid
+fn laplacian(f: &VelocityGrid, x:usize, y:usize, z:usize)->f32{
+    return second_order_second_spatial_derivative(f, x, y, z, 0)+second_order_second_spatial_derivative(f, x, y, z, 1)+second_order_second_spatial_derivative(f, x, y, z, 2);
+}
+\end{lstlisting}
+So we are now able to calculate the diffusion term using:
+\begin{lstlisting}[language=Rust, style=boxed, breaklines=true]
+let diffusion=VISCOSITY*(laplacian(velocity_field, x, y, z));
+\end{lstlisting}
+We will not put this into a function already, because we do not know all the other terms yet. We will however add the constant VISCOSITY:
+\begin{lstlisting}[language=Rust, style=boxed, breaklines=true]
+const VISCOSITY: f32 = 0.001;//Viscosity in Pa*s.
+\end{lstlisting}
+\subsection{Discretising the time}
+Like we expressed the diffusion terms as \(\partial _{d}\) we will express the convection terms as \(\partial _{c}\)\cite{MAC}.
+\[
+\begin{split}
+  \partial _cu=\rho(&u\pdv{u}{x}+v\pdv{u}{y}+w\pdv{u}{z})\\
+  \partial _cv=\rho(&u\pdv{v}{x}+v\pdv{v}{y}+w\pdv{v}{z})\\
+  \partial _cw=\rho(&u\pdv{w}{x}+v\pdv{w}{y}+w\pdv{w}{z})
+\end{split}
+\]
+So, we can write equation \ref{NSE incompressible} as\cite{MAC}:
+\[
+\begin{split}
+  \rho \pdv{u}{t} + \partial _cu=&-\pdv{p}{x}+\partial _du\\
+  \rho \pdv{v}{t} + \partial _cv=&-\pdv{p}{y}+\partial _dv\\
+  \rho \pdv{w}{t} + \partial _cw=&-\pdv{p}{z}+\partial _dw
+\end{split}
+\]
+We use this notation because it is a lot shorter and As discussed previously, we will use forward time for the derivatives. Let \(a^n\) denote a in the current timestep and \(a^{n+1}\) a in the next timestep, where a is a variable. We can rewrite the above equations to: \cite{MAC}
+\[
+\begin{split}
+  \rho \frac{u^{n+1}-u^n}{\Delta t} + \partial _cu=&-\pdv{p^{n+1}}{x}+\partial _du\\
+  \rho \frac{v^{n+1}-v^n}{\Delta t} + \partial _cv=&-\pdv{p^{n+1}}{y}+\partial _dv\\
+  \rho \frac{w^{n-1}-w^n}{\Delta t} + \partial _cw=&-\pdv{p^{n+1}}{z}+\partial _dw
+\end{split}
+\]
+Unfortunately, we now have two variables for each formula: \(\frac{u^{n+1}-u^n}{\Delta t}\) and \(\pdv{p^{n+1}}{x}\), for x for instance. Therefore, we can not just solve this formula. We can however set the pressure term to the current pressure term and correct the error that is created in that way later. We will denote the velocies obtained in that way \(\tilde{u}\), \(\tilde{v}\) and \(\tilde{w}\).
+\[
+\begin{split}
+  \rho \frac{\tilde{u}^{n+1}-\tilde{u}^n}{\Delta t} + \partial _cu=&-\pdv{p^{n}}{x}+\partial _du\\
+  \rho \frac{\tilde{v}^{n}-v^n}{\Delta t} + \partial _cv=&-\pdv{p^{n+1}}{y}+\partial _dv\\
+  \rho \frac{w^{n-1}-w^n}{\Delta t} + \partial _cw=&-\pdv{p^{n+1}}{z}+\partial _dw
+\end{split}
+\]
 \newpage
 %Eind PWS, start bronnenlijst
 \begin{thebibliography}{3}
@@ -417,5 +530,7 @@ $};
 \url{https://www.youtube.com/watch?v=0qtvRjuTihY}
 \bibitem{Vulkan}
 https://vulkan-tutorial.com/
+\bibitem{visual room}
+\url{http://thevisualroom.com/marker_and_cell_method.html}
 \end{thebibliography}
 \end{document}

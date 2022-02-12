@@ -85,8 +85,15 @@ impl InstanceVertex{
             let vertex_count = model.mesh.positions.len()/3;
             for i in 0..vertex_count{
                 let vertex = Self{
-                    pos : [model.mesh.positions[i*3]/25.0,model.mesh.positions[i*3+1]/25.0,model.mesh.positions[i*3+2]/25.0],
-                    color : [0.0,0.0,0.0],
+                    pos : [
+                        model.mesh.positions[i*3]/25.0,
+                        model.mesh.positions[i*3+1]/25.0,
+                        model.mesh.positions[i*3+2]/25.0],
+                    color : [
+                        0.0,
+                        0.0,
+                        0.0
+                        ],
                 };
                 vertices.push(vertex);
             }

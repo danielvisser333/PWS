@@ -1,17 +1,17 @@
-use std::vec;
+use std::{vec, time::Duration};
 
 use renderer::Renderer;
 
 //Physical constants
 const GRIDELEMENTSCALE: f32 = 0.05;//The size of a grid element in meters
-const TIMESTEPSIZE: f32 = 0.1;//The size of a time step size in seconds
+const TIMESTEPSIZE: f32 = 0.05;//The size of a time step size in seconds
 const DENSITY: f32 = 1000.0;//Density of the liquid in kg/m^{3}. We simulate water.
 const EXTERNALFORCE : [f32; 3] = [0.0,0.0,-9.81];//Gravity in N
 const VISCOSITY: f32 = 0.001;//Viscosity in Pa*s.
 
-const MAXITERATIONSPERTIMEFRAME:i32=50;
+const MAXITERATIONSPERTIMEFRAME:i32=200;
 const RELEXATION: f32=1.0;//Pressure correction is often underestimated, this factor should be between 1.4 and 1.8.
-const ALLOWEDERROR: f32=0.00001; 
+const ALLOWEDERROR: f32=0.000001; 
 
 //Pressure is measured in Pascal, because it is the standard SI unit for pressure.
 
@@ -32,10 +32,11 @@ pub fn initialize_simulation(){
     let mut velocity_z = VelocityGrid{grid: vec![vec![vec![0.0;PRESSUREGRIDSIZE[2]+1]; PRESSUREGRIDSIZE[1]+2]; PRESSUREGRIDSIZE[0]+2], dimension:2}; 
     
     initialize_pressure_grid(&mut pressure_grid);
-
-    let render_data = simulation_time_step(&mut velocity_x, &mut velocity_y, &mut velocity_z, &mut pressure_grid);
-    renderer.transform_grid(render_data);
-
+    for _ in 0..10{
+        let render_data = simulation_time_step(&mut velocity_x, &mut velocity_y, &mut velocity_z, &mut pressure_grid);
+        renderer.transform_grid(render_data);
+        std::thread::sleep(Duration::from_secs(1));
+    }
     renderer.await_close_request();
 }
 
@@ -108,9 +109,13 @@ fn simulation_time_step(velocity_grid_x: &mut VelocityGrid, velocity_grid_y: &mu
             velocity_grid_y.grid=provisional_velocity_y.grid.clone();
             velocity_grid_z.grid=provisional_velocity_z.grid.clone();
             *i=MAXITERATIONSPERTIMEFRAME;
-            println!("Converged! total errrow is {}", total_error);
+            println!("Converged! total error is {}", total_error);
         }else{
-            println!("Iteration {} did not converge, total eroor was: {}, max error was {} ", i, total_error, ALLOWEDERROR);
+            if *i+1==MAXITERATIONSPERTIMEFRAME{
+                println!("Iteration {} did not converge, total error was: {}, max error was {} ", i, total_error, ALLOWEDERROR);
+                std::process::exit(1);
+            }
+            println!{"convergence has not yet been reached, trying again, iteration: {}", i};
         }
         *i=*i+1;
         println!("i is {}", i);

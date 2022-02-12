@@ -74,8 +74,9 @@ impl Camera{
     }
     ///Zoom in or out
     pub fn mouse_zoom(&mut self, delta : f32){
+        let delta = -delta%2.0;
         if self.fov + delta < 180.0 && self.fov + delta > 0.0{
-            self.fov -= delta;
+            self.fov += delta;
             self.projection = cgmath::perspective(Deg(self.fov), self.aspect, self.near, self.far); 
             self.projection[1][1] = self.projection[1][1] * -1.0;
         };
