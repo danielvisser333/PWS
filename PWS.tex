@@ -148,14 +148,14 @@ The equation at the top is called the continuity equation. The others are the mo
 \subsubsection{Viscosity}
 All fluids have viscosity. But, like compressibility, it can be neglected sometimes. Viscosity is: \(\eta=\frac{F/A}{dv_{x}/dz }\). Here F is the shear force, that is the force parallel to a surface. A is the surface and \(dv_{x}/dz\) is the change in velocity.\cite{Viscosity}. We will not neglect viscosity, because we do intend to simulate a water container with boundaries and viscosity is important near the boundaries, because there is dissipation over there.\cite{NSE features} Dissipation is the conversion of some for of energy to heat energy\cite{Dissipation}. Without viscosity the Navier Stokes Equations reduce to the Euler Equations\cite{NSE features}.
 \subsubsection{Laminar and Turbulent flows}
-Flows can be either laminar or turbulent\cite{NSE features}. In laminar flows there is no disruption between adjacent layers, but in turbulent flows there is. Turbulent flows have chaotic paths and they swirl. The Navier Stokes Equations for laminar and turbulent flows are the same. But there are very small changes in pressure, velocity and temperature in turbulent flows, which should be dealt with. Although a turbulent flow can be modelled using the Navier Stokes Equations, this costs a lot of computation power due to the small changes.\cite{Turbulence} Therefore, they are often modelled in another way. The simulation of turbulent flows is beyond the scope of this project.
+Flows can be either laminar or turbulent\cite{NSE features}. In laminar flows there is no disruption between adjacent layers, but in turbulent flows there is. Turbulent flows have chaotic paths and they swirl. The Navier Stokes Equations for laminar and turbulent flows are the same. But there are very small changes in pressure, velocity and temperature in turbulent flows, which should be dealt with. Although a turbulent flow can be modeled using the Navier Stokes Equations, this costs a lot of computation power due to the small changes.\cite{Turbulence} Therefore, they are often modeled in another way. The simulation of turbulent flows is beyond the scope of this project.
 \subsubsection{Steady and unsteady} \label{(un)steady}
 A flow is either steady or unsteady\cite{NSE features}. In a steady flow parameters, such as velocity, do not change over time. In a unsteady flow parameters can change over time.\cite{Steady and unsteady} We will simulate a unsteady flow, because we want that the water in the container is able to move.
 %Boundary conditions
 \subsection{Boundary conditions}
 To solve a partial differential equation it is necessary to enforce boundary conditions. A container with water has two types of boundaries. One type are the walls and the floor. The other is the free surface of the water. The free surface is the surface where the water and air touch each other. The boundary condition at the free surface is trickier than that at the walls and floor, since the free surface can move, while the walls and floors can not. 
 \subsubsection{No-slip boundary condition} \label{no-slip boundary condition}
-The no-slip boundary conditition supposes the velocity of a fluid that touches a solid is equal to the velocity of the solid \cite{no-slip boundary condition}.
+The no-slip boundary condition supposes the velocity of a fluid that touches a solid is equal to the velocity of the solid \cite{no-slip boundary condition}.
 \subsubsection{Free slip boundary condition}
 The free-slip boundary condition presumes the velocity of the fluid perpendicular to the wall is zero, so the fluid can not move through the wall. But, it does not restrict the velocity parallel to the wall.\cite{free slip boundary condition} 
 \subsubsection{Dynamic boundary condition}
@@ -163,43 +163,6 @@ The dynamic boundary condition assumes the pressure on the free surface must be 
 \newpage
 %Programming
 \section{Programming}
-\subsection{Grid}
-At first we tried to allocate a three dimensional array on the stack, which didn't work as the stack is only 2Mb's large. So we allocate the array on the heap. We define the grid as a three dimensional array allocated on the heap (boxed).
-\begin{lstlisting}[language=Rust, style=boxed]
-const GRID_SIZE : [usize;3] = [500,500,500];
-let grid = 
-      Box<[[[f32;GRID_SIZE[2]];GRID_SIZE[1]];GRID_SIZE[0]]>
-\end{lstlisting}
-The mayor issue we have run into is that a three dimensional array takes op a lot of space. an array with a size of $1000^{3}$ takes up $1000^{3}*4*2$ bytes or approximately 8 Gigabytes($*4$ because a floating point is 4 bytes large and $*2$ because you need to store the current array and the future array).
-\subsection{Iterating}
-Time in computers is not continuous but discretized. Because of this, we have to iterate over timesteps.
-\begin{lstlisting}[language=Rust, style=boxed]
-let mut iterations : u32 = 10;
-for _ in 0..iterations{
-    update(&mut grid);
-}
-pub fn update(
-  &mut : Box<[[[f32;GRID_SIZE[2]];GRID_SIZE[1]];GRID_SIZE[0]]>
-){
-//TODO: Do the actual simulation
-  draw(grid);
-}
-\end{lstlisting}
-\subsection{Drawing}
-\subsubsection{Initialization}
-In order to show the actual grid we need a way to draw the grid to the screen. We've decided to use Vulkan as we alreay knew a bit about it and it is quite fast.\cite{Vulkan} Vulkan draws to a surface/swapchain (a window or a mp4/mkv file). This drawing is done by a device (a GPU) which gets its data from a buffer of vertices.
-\begin{lstlisting}[language=Rust, style=boxed]
-let instance = unsafe{fns::create_instance()}
-//The window handle is retrieved by the winit library to make things easier
-let surface = unsafe{ash_window::create_surface(&instance, window)}
-let device = unsafe{get_compatible_device(&instance)}
-let swapchain = unsafe{create_swapchain(&instance,&device)}
-\end{lstlisting}
-
-
-
-
-
 \section{The implementation of the finite difference method}
 \subsection{Odd-even decoupling} \label{odd-even}
 
@@ -229,7 +192,7 @@ let swapchain = unsafe{create_swapchain(&instance,&device)}
 \node[] at (5.5,-0.8) {Using a staggered grid};
 \end{tikzpicture} \caption{Collocated and staggered grids} \label{Odd-even decoupling} \end{figure}
 %Odd-even decoupling
-The Finite Difference Method calculates the pressure and velocity at discrete grid points. We can choose ourselves which variables will be calculated at which points. It would be the most easy to store all variables at every point. Such a grid is called a collocated grid\cite{Staggered grid}. However, as figure \ref{Odd-even decoupling} shows, there will be no fluid flow between cell i-1 and i and cell i and i+1 when the pressure in cells i-1 and i+1 is equal in such a grid. This phenomenom is called odd-even decoupling and happens because the derivative in cell i will be zero\cite{Staggered grid}. It is called so because information from odd and even cells are not combined properly\cite{Staggered grid}. To solve that problem we will use a staggered grid, such as in the right side of figure \ref{Odd-even decoupling}. A staggered grid consists of cells. The pressure is stored in the cell center and the velocities in the cell edges that are perpendicular to them\cite{Staggered grid}. As one can see, the derivatives will not be zero anymore, since the flow between two cells will not depend on the pressure in other cells anymore.
+The Finite Difference Method calculates the pressure and velocity at discrete grid points. We can choose ourselves which variables will be calculated at which points. It would be the most easy to store all variables at every point. Such a grid is called a collocated grid\cite{Staggered grid}. However, as figure \ref{Odd-even decoupling} shows, there will be no fluid flow between cell i-1 and i and cell i and i+1 when the pressure in cells i-1 and i+1 is equal in such a grid. This phenomenon is called odd-even decoupling and happens because the derivative in cell i will be zero\cite{Staggered grid}. It is called so because information from odd and even cells are not combined properly\cite{Staggered grid}. To solve that problem we will use a staggered grid, such as in the right side of figure \ref{Odd-even decoupling}. A staggered grid consists of cells. The pressure is stored in the cell center and the velocities in the cell edges that are perpendicular to them\cite{Staggered grid}. As one can see, the derivatives will not be zero anymore, since the flow between two cells will not depend on the pressure in other cells anymore.
 \newpage
 \subsection{Boundary conditions and walls}
 \begin{figure}[ht]
@@ -272,7 +235,7 @@ Here v is parallel to the wall(so not necessarily in the y-direction), \(v_{wall
 \end{split}\]
 Because of the imaginary velocity grid points, we will have to make the grid larger in some directions.\\ \\
 
-In short, whe have the following boundary conditions: \\
+In short, we have the following boundary conditions: \\
 1) The velocities on the edge of the box that are perpendicular to the box are zero.\\
 2) The imaginary velocities are equal to the inverse of the velocities opposite of the wall.
 
@@ -302,7 +265,7 @@ In short, whe have the following boundary conditions: \\
 \label{grid sizes}
 \end{figure}
 
-If we were using a collocated grid we would store our data in an array with the desired dimensions. However, we are using a staggered grid. This complicates the grid sizes a lot. We will have to use three seperate grids for velocity with different sizes and another grid for the pressure. Let u, v and w denote the velocities in respectively the x, y and z direction. The size of the pressure grid are m*n*o. In the directions that are orthogonal to the velocities of a velocity grid the size of that grid will be the size of the pressure grid plus one. We have illustrated this in figure \ref{grid sizes}. The size of the grid in the dimension that is parallel to the velocities that the grid contains is the pressure grid size plus two. The sizes in those directions are that size because of the imaginary velocties we need to store.
+If we were using a collocated grid we would store our data in an array with the desired dimensions. However, we are using a staggered grid. This complicates the grid sizes a lot. We will have to use three seperate grids for velocity with different sizes and another grid for the pressure. Let u, v and w denote the velocities in respectively the x, y and z direction. The size of the pressure grid are m*n*o. In the directions that are orthogonal to the velocities of a velocity grid the size of that grid will be the size of the pressure grid plus one. We have illustrated this in figure \ref{grid sizes}. The size of the grid in the dimension that is parallel to the velocities that the grid contains is the pressure grid size plus two. The sizes in those directions are that size because of the imaginary velocities we need to store.
 
 \newpage
 
@@ -317,7 +280,7 @@ Computers can not exactly calculate the derivatives, so we will have to approxim
   v\pdv{v}{y}=& v_{i,j,k}\frac{v_{i,j+1.k}-v_{i,j-1,k}}{2\Delta x}\\
   w\pdv{w}{z}=& w_{i,j,k}\frac{w_{i,j.k+1}-w_{i,j,k-1}}{2\Delta x}
 \end{split}\]
-However, calculating the other convection terms is more complex, because we have to estimate a velocity at point (i,j,k) of a grid which is not defined at that grid point. We can however estimate those velocities by taking the average of some nearby velocties, as in figure \ref{velocity to other grid}\cite{MAC}.
+However, calculating the other convection terms is more complex, because we have to estimate a velocity at point (i,j,k) of a grid which is not defined at that grid point. We can however estimate those velocities by taking the average of some nearby velocities, as in figure \ref{velocity to other grid}\cite{MAC}.
 \begin{figure}[h]
 \centering
 % body of the figure
@@ -365,7 +328,7 @@ pub struct VelocityGrid{
 \end{lstlisting}
 As one can see, the grid is stored in a vector(Vec means vector). In Rust, a vector is an array that can have different sizes. Furthermore, the dimension of the array is stored as a usize, which basically is an integer with a maximum length that corresponds to the maximum length of an array. The values 0,1 and 2 for dimension denote the x-, y-, and z-direction respectively. To prevent the use of a lot of if-statement, we create a function that can convert the dimension number to an array for which all elements, except the element corresponding to the dimension number are zero. 
 \begin{lstlisting}[language=Rust, style=boxed, breaklines=true]
-//Gives you the unit vector of the dimension with the given numer.
+//Gives you the unit vector of the dimension with the given number.
 //x - 0, y - 1, z - 2
 fn get_dimension(dimension_number:usize)->[usize; 3]{
     let mut dim = [0,0,0];
@@ -399,7 +362,7 @@ fn get_velocity_from_orthogonal_grid(orthogonal_grid: &VelocityGrid, x:usize, y:
 }
 \end{lstlisting}
 
-
+\newpage
 \subsection{Discretising the diffusion term}
 Like the convection term, the diffusion term contains no temporal terms. Of course it varies, since it terms do vary over time, but we can calculate it using information from only one timestep. We will abreviate the diffusion term of u as \(\partial _{d}u\) and the diffusion terms of v and w in a similar way\cite{MAC}. The diffusion terms of equation \ref{NSE incompressible} are\cite{MAC}:
 \begin{equation}
@@ -442,29 +405,53 @@ Like we expressed the diffusion terms as \(\partial _{d}\) we will express the c
 \end{split}
 \]
 So, we can write equation \ref{NSE incompressible} as\cite{MAC}:
-\[
+\begin{equation}
 \begin{split}
   \rho \pdv{u}{t} + \partial _cu=&-\pdv{p}{x}+\partial _du\\
   \rho \pdv{v}{t} + \partial _cv=&-\pdv{p}{y}+\partial _dv\\
   \rho \pdv{w}{t} + \partial _cw=&-\pdv{p}{z}+\partial _dw
 \end{split}
-\]
+\end{equation}\label{short NSE}
 We use this notation because it is a lot shorter and As discussed previously, we will use forward time for the derivatives. Let \(a^n\) denote a in the current timestep and \(a^{n+1}\) a in the next timestep, where a is a variable. We can rewrite the above equations to: \cite{MAC}
-\[
+\begin{equation}
 \begin{split}
   \rho \frac{u^{n+1}-u^n}{\Delta t} + \partial _cu=&-\pdv{p^{n+1}}{x}+\partial _du\\
   \rho \frac{v^{n+1}-v^n}{\Delta t} + \partial _cv=&-\pdv{p^{n+1}}{y}+\partial _dv\\
-  \rho \frac{w^{n-1}-w^n}{\Delta t} + \partial _cw=&-\pdv{p^{n+1}}{z}+\partial _dw
+  \rho \frac{w^{n+1}-w^n}{\Delta t} + \partial _cw=&-\pdv{p^{n+1}}{z}+\partial _dw
 \end{split}
-\]
-Unfortunately, we now have two variables for each formula: \(\frac{u^{n+1}-u^n}{\Delta t}\) and \(\pdv{p^{n+1}}{x}\), for x for instance. Therefore, we can not just solve this formula. We can however set the pressure term to the current pressure term and correct the error that is created in that way later. We will denote the velocies obtained in that way \(\tilde{u}\), \(\tilde{v}\) and \(\tilde{w}\).
-\[
+\end{equation} \label{time discretised NSE}
+Unfortunately, we now have two variables for each formula: \(\frac{u^{n+1}-u^n}{\Delta t}\) and \(\pdv{p^{n+1}}{x}\), for x for instance. Therefore, we can not just solve this formula. We can however set the pressure term to the current pressure term and correct the error that is created in that way later. We will denote the velocities obtained in that way \(\tilde{u}\), \(\tilde{v}\) and \(\tilde{w}\)\cite{MAC}.
+\begin{equation}
 \begin{split}
-  \rho \frac{\tilde{u}^{n+1}-\tilde{u}^n}{\Delta t} + \partial _cu=&-\pdv{p^{n}}{x}+\partial _du\\
-  \rho \frac{\tilde{v}^{n}-v^n}{\Delta t} + \partial _cv=&-\pdv{p^{n+1}}{y}+\partial _dv\\
-  \rho \frac{w^{n-1}-w^n}{\Delta t} + \partial _cw=&-\pdv{p^{n+1}}{z}+\partial _dw
+  \rho \frac{\tilde{u}-u^n}{\Delta t} + \partial _cu=&-\pdv{p^{n}}{x}+\partial _du\\
+  \rho \frac{\tilde{v}-v^n}{\Delta t} + \partial _cv=&-\pdv{p^{n}}{y}+\partial _dv\\
+  \rho \frac{\tilde{w}-w^n}{\Delta t} + \partial _cw=&-\pdv{p^{n}}{z}+\partial _dw
 \end{split}
+\end{equation} \label{guess NSE}
+These equations contain only one unknown variable(per equation). We can rewrite them to calculate that variable. 
+\[
+  \begin{split}
+  \tilde{u}=u^{n}+\frac{\Delta t}{\rho}(-\pdv{p^{n}}{x}-\partial _cu +\partial _du)\\
+  \tilde{v}=v^{n}+\frac{\Delta t}{\rho}(-\pdv{p^{n}}{y}-\partial _cv +\partial _dv)\\
+  \tilde{w}=w^{n}+\frac{\Delta t}{\rho}(-\pdv{p^{n}}{z}-\partial _cw +\partial _dw)
+  \end{split}
 \]
+
+\subsection{Drawing}
+The way we decided to show the movement of the fluids is by drawing arrows in a space of three dimensions. We do this by first loading in the arrow from an OBJ file. and OBJ file is the simplest way of storing three dimensional objects. We define the center of the arrow as (0,0,0). This makes rotation and translation easier. We also make sure that by default the arrow position is up, giving us the vector $\vec{v}=(0,0,1)$. We then create multiple instances of that arrow which we multiply with a quaternion that is the cross product of the desired rotation and the neutral rotation and we set the scalar equal to the distance between the endpoints of the vectors with the origin as a starting point. finally we transform the arrow by a vector $\vec{x}=(x,y,z)$, giving us the following transformation: 
+$\begin{bmatrix}
+1 & 0 & 0 & 0\\
+0 & 1 & 0 & 0\\
+0 & 0 & 1 & 0\\
+x & y & z & 1
+\end{bmatrix}$. Due to the z-component in compute graphics being defined as the distance from the screen and the height as the y-component, we also need to switch the z and y-components.$\begin{bmatrix}
+1 & 0 & 0 & 0\\
+0 & 0 & 1 & 0\\
+0 & 1 & 0 & 0\\
+x & y & z & 1
+\end{bmatrix}$
+
+
 \newpage
 %Eind PWS, start bronnenlijst
 \begin{thebibliography}{3}
