@@ -1,10 +1,10 @@
-use std::{vec, time::Duration};
+use std::vec;
 
-use renderer::Renderer;
+use renderer::{Renderer, RenderResult};
 
 //Physical constants
 const GRIDELEMENTSCALE: f32 = 0.05;//The size of a grid element in meters
-const TIMESTEPSIZE: f32 = 0.05;//The size of a time step size in seconds
+const TIMESTEPSIZE: f32 = 0.0005;//The size of a time step size in seconds
 const DENSITY: f32 = 1000.0;//Density of the liquid in kg/m^{3}. We simulate water.
 const EXTERNALFORCE : [f32; 3] = [0.0,0.0,-9.81];//Gravity in N
 const VISCOSITY: f32 = 0.001;//Viscosity in Pa*s.
@@ -32,12 +32,14 @@ pub fn initialize_simulation(){
     let mut velocity_z = VelocityGrid{grid: vec![vec![vec![0.0;PRESSUREGRIDSIZE[2]+1]; PRESSUREGRIDSIZE[1]+2]; PRESSUREGRIDSIZE[0]+2], dimension:2}; 
     
     initialize_pressure_grid(&mut pressure_grid);
-    for _ in 0..10{
+    loop{
         let render_data = simulation_time_step(&mut velocity_x, &mut velocity_y, &mut velocity_z, &mut pressure_grid);
         renderer.transform_grid(render_data);
-        std::thread::sleep(Duration::from_secs(1));
+        match renderer.await_request(){
+            RenderResult::NextStep => {}
+            RenderResult::Shutdown=>{return}
+        };
     }
-    renderer.await_close_request();
 }
 
 fn initialize_pressure_grid(pressure_grid: &mut [[[f32; PRESSUREGRIDSIZE[2]];PRESSUREGRIDSIZE[1]];PRESSUREGRIDSIZE[0]]){

@@ -58,6 +58,9 @@ impl Renderer{
                                 if input.virtual_keycode == Some(VirtualKeyCode::F10){
                                     renderer.allocator.dump_contents();
                                 }
+                                else if input.virtual_keycode == Some(VirtualKeyCode::N){
+                                    shutdown_sender.send(RenderResult::NextStep).unwrap();
+                                }
                             }
                             WindowEvent::MouseWheel{delta, .. }=>{
                                 match delta{
@@ -119,7 +122,7 @@ impl Renderer{
             });
             drop(renderer);
             println!("Destroying render thread");
-            shutdown_sender.send(RenderResult::Success).unwrap();
+            shutdown_sender.send(RenderResult::Shutdown).unwrap();
         });
         return Self{
             sender,/*receiver,*/thread_pool,receiver_shutdown,
@@ -131,8 +134,8 @@ impl Renderer{
         });
         match self.sender.send(matrices){Ok(_)=>{}Err(_)=>{}};
     }
-    pub fn await_close_request(self){
-        self.receiver_shutdown.recv().unwrap();
+    pub fn await_request(&self) -> RenderResult{
+        return self.receiver_shutdown.recv().unwrap();
     }
 }
 pub enum RenderTask{
@@ -140,7 +143,8 @@ pub enum RenderTask{
     UpdateObjects(Vec<ModelMatrix>),
 }
 pub enum RenderResult{
-    Success
+    NextStep,
+    Shutdown,
 }
 struct RenderOnThread{
     _entry : Entry,
