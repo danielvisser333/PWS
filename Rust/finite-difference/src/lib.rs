@@ -24,7 +24,7 @@ pub struct VelocityGrid{
 }
 
 pub fn initialize_simulation(){
-    let renderer = Renderer::new(true);
+    //let renderer = Renderer::new(true);
     let mut pressure_grid: [[[f32; PRESSUREGRIDSIZE[2]]; PRESSUREGRIDSIZE[1]]; PRESSUREGRIDSIZE[0]]=[[[0.0; PRESSUREGRIDSIZE[2]]; PRESSUREGRIDSIZE[1]]; PRESSUREGRIDSIZE[0]];//pressureGrid[x][y][z] is the pressure at coordinates (x,y,z)
     //The size of the velocity grid should be 1 bigger in every spatial dimension(so that's all dimensions in the array) because we use a collocated grid
     let mut velocity_x = VelocityGrid{grid: vec![vec![vec![1.0;PRESSUREGRIDSIZE[2]+2]; PRESSUREGRIDSIZE[1]+2]; PRESSUREGRIDSIZE[0]+1], dimension:0};
@@ -35,9 +35,9 @@ pub fn initialize_simulation(){
     for _ in 0..10{
         let render_data = simulation_time_step(&mut velocity_x, &mut velocity_y, &mut velocity_z, &mut pressure_grid);
         renderer.transform_grid(render_data);
-        std::thread::sleep(Duration::from_secs(1));
+        //std::thread::sleep(Duration::from_secs(1));
     }
-    renderer.await_close_request();
+    //renderer.await_close_request();
 }
 
 fn initialize_pressure_grid(pressure_grid: &mut [[[f32; PRESSUREGRIDSIZE[2]];PRESSUREGRIDSIZE[1]];PRESSUREGRIDSIZE[0]]){
@@ -168,18 +168,20 @@ fn predict_velocity(provisonal_velocity_field: &mut VelocityGrid, velocity_field
     for x in 1..(PRESSUREGRIDSIZE[0]-dim[0]+1) {
         for y in 1..(PRESSUREGRIDSIZE[1]-dim[1]+1) {
             for z in 1..(PRESSUREGRIDSIZE[2]-dim[2]+1) {
-                //convection term
-                let convection=DENSITY*(velocity_field_last_time_step.grid[x][y][z]*second_order_spatial_derivative(&velocity_field_last_time_step, x, y, z, velocity_field_last_time_step.dimension)
-                +get_velocity_from_orthogonal_grid(&orthogonal_velocity_field_a, x, y, z, velocity_field_last_time_step.dimension)*second_order_second_spatial_derivative(velocity_field_last_time_step, x, y, z, orthogonal_velocity_field_a.dimension)
-                +get_velocity_from_orthogonal_grid(&orthogonal_velocity_field_b, x, y, z, velocity_field_last_time_step.dimension)*second_order_second_spatial_derivative(velocity_field_last_time_step, x, y, z, orthogonal_velocity_field_b.dimension));
                 //Diffusion term
                 let diffusion=VISCOSITY*(laplacian(velocity_field_last_time_step, x, y, z));
                 //And finally, the provisional velocity
-                provisonal_velocity_field.grid[x][y][z]=velocity_field_last_time_step.grid[x][y][z]+TIMESTEPSIZE/DENSITY*(-convection+first_order_central_spatial_pressure_derivative(pressure_grid, x-1, y-1, z-1, velocity_field_last_time_step.dimension)+diffusion+EXTERNALFORCE[velocity_field_last_time_step.dimension]);
+                provisonal_velocity_field.grid[x][y][z]=velocity_field_last_time_step.grid[x][y][z]+TIMESTEPSIZE/DENSITY*(-convection_term(velocity_field_last_time_step, orthogonal_velocity_field_a, orthogonal_velocity_field_b, x, y, z)+first_order_central_spatial_pressure_derivative(pressure_grid, x-1, y-1, z-1, velocity_field_last_time_step.dimension)+diffusion+EXTERNALFORCE[velocity_field_last_time_step.dimension]);
             }
         }
     }
 
+}
+
+fn convection_term(velocity_field_last_time_step: &VelocityGrid,orthogonal_velocity_field_a: &VelocityGrid, orthogonal_velocity_field_b: &VelocityGrid, x: usize, y:usize, z:usize ) -> f32{// calculate the convection term
+     return DENSITY*(velocity_field_last_time_step.grid[x][y][z]*second_order_spatial_derivative(&velocity_field_last_time_step, x, y, z, velocity_field_last_time_step.dimension)
+                +get_velocity_from_orthogonal_grid(&orthogonal_velocity_field_a, x, y, z, velocity_field_last_time_step.dimension)*second_order_spatial_derivative(velocity_field_last_time_step, x, y, z, orthogonal_velocity_field_a.dimension)
+                +get_velocity_from_orthogonal_grid(&orthogonal_velocity_field_b, x, y, z, velocity_field_last_time_step.dimension)*second_order_spatial_derivative(velocity_field_last_time_step, x, y, z, orthogonal_velocity_field_b.dimension));
 }
 
 fn update_velocity_field(velocity_field: &mut VelocityGrid){

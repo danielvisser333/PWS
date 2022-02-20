@@ -36,7 +36,7 @@
 \newpage
 %Start van het PWS zelf
 \section{Introduction}
-People have been simulating liquids and gasses for decades using computers.
+People have been simulating liquids and gasses for decades using computers. We thought this would be an interesting subject to write our PWS about.
 \newpage
 
 \section{The Navier-Stokes equations}
@@ -144,7 +144,7 @@ All fluids can be compressed. Their volume gets smaller when the pressure on the
 \end{aligned}
 \label{NSE incompressible}
 \end{equation}
-The equation at the top is called the continuity equation. The others are the momentum equations. The parts of the left hand sides between brackets are called the convection terms. The parts on the right hand sides between brackets are called the diffusion terms. The parts involving pressure are the pressure terms and \(\rho g\) is the gravitational force.
+The equation at the top is called the continuity equation. The others are the momentum equations. The spatial derivatives of the left hand sides are called the convection terms. The parts on the right hand sides between brackets are called the diffusion terms. The parts involving pressure are the pressure terms and \(\rho g\) is the gravitational force.
 \subsubsection{Viscosity}
 All fluids have viscosity. But, like compressibility, it can be neglected sometimes. Viscosity is: \(\eta=\frac{F/A}{dv_{x}/dz }\). Here F is the shear force, that is the force parallel to a surface. A is the surface and \(dv_{x}/dz\) is the change in velocity.\cite{Viscosity}. We will not neglect viscosity, because we do intend to simulate a water container with boundaries and viscosity is important near the boundaries, because there is dissipation over there.\cite{NSE features} Dissipation is the conversion of some for of energy to heat energy\cite{Dissipation}. Without viscosity the Navier Stokes Equations reduce to the Euler Equations\cite{NSE features}.
 \subsubsection{Laminar and Turbulent flows}
@@ -162,7 +162,6 @@ The free-slip boundary condition presumes the velocity of the fluid perpendicula
 The dynamic boundary condition assumes the pressure on the free surface must be constant.
 \newpage
 %Programming
-\section{Programming}
 \section{The implementation of the finite difference method}
 \subsection{Odd-even decoupling} \label{odd-even}
 
@@ -274,7 +273,15 @@ If we were using a collocated grid we would store our data in an array with the 
 
 
 \subsection{Discretising the convection term and implementing the grid}
-Computers can not exactly calculate the derivatives, so we will have to approximate them to solve equation \ref{NSE incompressible}. We will be using Forward Time Central Space(FTCS) for approximating the derivatives\cite{MAC}. This means we will use first order forward derivatives for time and second order central derivatives for space. We can calculate the convection terms \(u\pdv{u}{x}\), \(v\pdv{v}{y}\) and \(w\pdv{w}{x}\)  using equation \ref{taylor deriative}. In the equations below, one might notice that we have used \(\Delta x\) everywhere and have not used \(\Delta y\) or \(\Delta z\). We have done this because we set \(\Delta x = \Delta y = \Delta z\).
+We will express the convection terms of equation \ref{NSE incompressible} as \(\partial _{c}\)\cite{MAC}.
+\begin{equation}
+\begin{split}
+  \partial _cu=\rho(&u\pdv{u}{x}+v\pdv{u}{y}+w\pdv{u}{z})\\
+  \partial _cv=\rho(&u\pdv{v}{x}+v\pdv{v}{y}+w\pdv{v}{z})\\
+  \partial _cw=\rho(&u\pdv{w}{x}+v\pdv{w}{y}+w\pdv{w}{z})
+\end{split}\label{convection terms}
+\end{equation}
+Computers can not exactly calculate the derivatives, so we will have to approximate them to solve equation \ref{NSE incompressible}. We will be using Forward Time Central Space(FTCS) for approximating the derivatives\cite{MAC}. This means we will use first order forward derivatives for time and second order central derivatives for space. We can calculate the convection terms \(u\pdv{u}{x}\), \(v\pdv{v}{y}\) and \(w\pdv{w}{x}\)  using equation \ref{taylor deriative}. In the equations below, one might notice that we have used \(\Delta x\) everywhere and have not used \(\Delta y\) or \(\Delta z\). We have done this because we set \(\Delta x = \Delta y = \Delta z\). 
 \[\begin{split}
   u\pdv{u}{x}=& u_{i,j,k}\frac{u_{i+1,j.k}-u_{i-1,j,k}}{2\Delta x}\\
   v\pdv{v}{y}=& v_{i,j,k}\frac{v_{i,j+1.k}-v_{i,j-1,k}}{2\Delta x}\\
@@ -361,6 +368,17 @@ fn get_velocity_from_orthogonal_grid(orthogonal_grid: &VelocityGrid, x:usize, y:
         +orthogonal_grid.grid[x+dim_to[0]][y+dim_to[1]][z+dim_to[2]]);//right up
 }
 \end{lstlisting}
+Now we use the above two functions to write a function that calculates the convections terms \(\partial _cu\), \(\partial _cv\) and \(\partial _cw\) from equation \ref{convection terms}. We will write one function that is able to calculate all these terms: 
+\begin{lstlisting}[language=Rust, style=boxed, breaklines=true]
+fn convection_term(velocity_field_last_time_step: &VelocityGrid,orthogonal_velocity_field_a: &VelocityGrid, orthogonal_velocity_field_b: &VelocityGrid, x: usize, y:usize, z:usize ) -> f32{// calculate the convection term
+     return DENSITY*(velocity_field_last_time_step.grid[x][y][z]*second_order_spatial_derivative(&velocity_field_last_time_step, x, y, z, velocity_field_last_time_step.dimension)
+                +get_velocity_from_orthogonal_grid(&orthogonal_velocity_field_a, x, y, z, velocity_field_last_time_step.dimension)*second_order_spatial_derivative(velocity_field_last_time_step, x, y, z, orthogonal_velocity_field_a.dimension)
+                +get_velocity_from_orthogonal_grid(&orthogonal_velocity_field_b, x, y, z, velocity_field_last_time_step.dimension)*second_order_spatial_derivative(velocity_field_last_time_step, x, y, z, orthogonal_velocity_field_b.dimension));
+}
+\end{lstlisting}
+
+
+
 
 \newpage
 \subsection{Discretising the diffusion term}
@@ -395,16 +413,40 @@ We will not put this into a function already, because we do not know all the oth
 \begin{lstlisting}[language=Rust, style=boxed, breaklines=true]
 const VISCOSITY: f32 = 0.001;//Viscosity in Pa*s.
 \end{lstlisting}
+\newpage
+\subsection{Discretising the pressure}
+\begin{figure}[ht]
+\centering
+% body of the figure
+\begin{tikzpicture}
+\draw[step=1cm,gray!50!white,thin] (0,0) grid (2,1);
+\draw [-stealth, red] (0.7,0.5) -- (1.3, 0.5);
+\filldraw[black] (0.5,0.5) circle (2pt);
+\filldraw[black] (1.5,0.5) circle (2pt);
+\node[] at (0, 1.2) {\(p_{i-1, j-1, k-1}\)};
+\node[] at (2, 1.2) {\(p_{i, j-1, k-1}\)};
+\node[] at (1, -0.5) {\(\frac{\pdv{p}{x}=p_{i, j-1, k-1}-p_{i-1, j-1, k-1}}{\Delta x}\)};
+
+\end{tikzpicture}
+
+\caption{derivative of pressure} \label{derivative of pressure}
+\end{figure}
+As in figure \ref{derivative of pressure}, we can calculate the derivatives \(\pdv{p}{x}\), \(\pdv{p}{y}\) and \(\pdv{p}{z}\)
+\begin{equation}
+  \begin{split}
+    \pdv{p}{x}=&\frac{p_{i, j-1, k-1}-p_{i-1, j-1, k-1}}{\Delta x}\\
+    \pdv{p}{y}=&\frac{p_{i-1, j, k-1}-p_{i-1, j-1, k-1}}{\Delta x}\\
+    \pdv{p}{z}=&\frac{p_{i-1, j-1, k}-p_{i-1, j-1, k-1}}{\Delta x}
+  \end{split}
+\end{equation}
+
+\subsection{Implicit and explicit methods} \label{implicit and explicit}
+Discretising the time can be done by using either an implicit or an explicit methods.\cite{enterfea} In explicit methods, all terms except for one belong to the current timestep and the remanining term that belongs to the next timestep can be calculated easily. \cite{enterfea}In implicit methods, more variables belong to the next timestep. At first, one variable is calculated in the same way as in the explicit methods and the values of the other variables are not changed. \cite{enterfea} Thereafter, the variables  are corrected iteratively so that the solution will converge. \cite{enterfea} In the case of the incompressible Navier-Stokes equation, this means the continuity equation will converge to zero. Consequently, in explicit methods the continuity equation will always converge to zero. However, in explicit methods it is just assumed that the continuity equation holds. For the continuity equation to hold the timestep size should be very low in explicit methods. \cite{enterfea} The timestep size can be higher in implicit methods, so less timesteps are needed. \cite{enterfea} However, explicit methods do not need multiple iterations per timestep. Therefore, they compute a timestep faster. \cite{enterfea}We will use an implicit method because we intend to be able to do long simulations and they are better for larger time intervals.\cite{enterfea}
+
+
 \subsection{Discretising the time}
-Like we expressed the diffusion terms as \(\partial _{d}\) we will express the convection terms as \(\partial _{c}\)\cite{MAC}.
-\[
-\begin{split}
-  \partial _cu=\rho(&u\pdv{u}{x}+v\pdv{u}{y}+w\pdv{u}{z})\\
-  \partial _cv=\rho(&u\pdv{v}{x}+v\pdv{v}{y}+w\pdv{v}{z})\\
-  \partial _cw=\rho(&u\pdv{w}{x}+v\pdv{w}{y}+w\pdv{w}{z})
-\end{split}
-\]
-So, we can write equation \ref{NSE incompressible} as\cite{MAC}:
+
+Using the formulas for \(\partial _du\) and \(\partial _dc\) we can write equation \ref{NSE incompressible} as\cite{MAC}:
 \begin{equation}
 \begin{split}
   \rho \pdv{u}{t} + \partial _cu=&-\pdv{p}{x}+\partial _du\\
@@ -412,31 +454,167 @@ So, we can write equation \ref{NSE incompressible} as\cite{MAC}:
   \rho \pdv{w}{t} + \partial _cw=&-\pdv{p}{z}+\partial _dw
 \end{split}
 \end{equation}\label{short NSE}
-We use this notation because it is a lot shorter and As discussed previously, we will use forward time for the derivatives. Let \(a^n\) denote a in the current timestep and \(a^{n+1}\) a in the next timestep, where a is a variable. We can rewrite the above equations to: \cite{MAC}
+We use this notation because it is a lot shorter and, as discussed previously, we will use forward time for the derivatives. Let \(a^n\) denote a in the current timestep and \(a^{n+1}\) a in the next timestep, where a is a variable. As discussed in chapter \ref{implicit and explicit}, we will use an implicit method. We will rewrite the Navier Stokes Equations with the spatial pressure derivative of the next timestep. This will allow us to enforce convergence. \cite{MAC}
 \begin{equation}
 \begin{split}
   \rho \frac{u^{n+1}-u^n}{\Delta t} + \partial _cu=&-\pdv{p^{n+1}}{x}+\partial _du\\
   \rho \frac{v^{n+1}-v^n}{\Delta t} + \partial _cv=&-\pdv{p^{n+1}}{y}+\partial _dv\\
   \rho \frac{w^{n+1}-w^n}{\Delta t} + \partial _cw=&-\pdv{p^{n+1}}{z}+\partial _dw
-\end{split}
-\end{equation} \label{time discretised NSE}
+\end{split}\label{time discretised NSE}
+\end{equation} 
 Unfortunately, we now have two variables for each formula: \(\frac{u^{n+1}-u^n}{\Delta t}\) and \(\pdv{p^{n+1}}{x}\), for x for instance. Therefore, we can not just solve this formula. We can however set the pressure term to the current pressure term and correct the error that is created in that way later. We will denote the velocities obtained in that way \(\tilde{u}\), \(\tilde{v}\) and \(\tilde{w}\)\cite{MAC}.
 \begin{equation}
 \begin{split}
   \rho \frac{\tilde{u}-u^n}{\Delta t} + \partial _cu=&-\pdv{p^{n}}{x}+\partial _du\\
   \rho \frac{\tilde{v}-v^n}{\Delta t} + \partial _cv=&-\pdv{p^{n}}{y}+\partial _dv\\
   \rho \frac{\tilde{w}-w^n}{\Delta t} + \partial _cw=&-\pdv{p^{n}}{z}+\partial _dw
-\end{split}
-\end{equation} \label{guess NSE}
+\end{split}\label{guess NSE}
+\end{equation} 
 These equations contain only one unknown variable(per equation). We can rewrite them to calculate that variable. 
-\[
+\begin{equation}
   \begin{split}
   \tilde{u}=u^{n}+\frac{\Delta t}{\rho}(-\pdv{p^{n}}{x}-\partial _cu +\partial _du)\\
   \tilde{v}=v^{n}+\frac{\Delta t}{\rho}(-\pdv{p^{n}}{y}-\partial _cv +\partial _dv)\\
   \tilde{w}=w^{n}+\frac{\Delta t}{\rho}(-\pdv{p^{n}}{z}-\partial _cw +\partial _dw)
+  \end{split}\label{velocity tilde}
+\end{equation} 
+Now we substract equation \ref{time discretised NSE} from \ref{guess NSE}.
+
+\begin{equation}
+	\begin{split}
+			%x direction
+			\rho & \frac{\tilde{u} - u^{n+1}}{\Delta t} \\ &= - \frac{p^{n}_{i,j-1,k-1}- p^{n+1}_{i-1,j-1,k-1}-(p^{n+1}_{i,j-1,k-1}- p^{n}_{i-1,j-1,k-1})}{\Delta x}\\
+			&=-\frac{(p^{n+1}_{i-1,j-1,k-1}-p^{n}_{i-1,j-1,k-1})- 
+			(p^{n+1}_{i,j-1,k-1}-p^{n}_{i,j-1,k-1})
+		}{\Delta x}\\
+			&=-\frac{p'_{i-1,j-1,k-1}-p'_{i,j-1,k-1}}{\Delta x}\\
+% y direction
+\rho & \frac{\tilde{v} - v^{n+1}}{\Delta t} \\ &= - \frac{p^{n}_{i-1,j,k-1}- p^{n+1}_{i-1,j-1,k-1}-(p^{n+1}_{i-1,j,k-1}- p^{n}_{i-1,j-1,k-1})}{\Delta x}\\
+			&=-\frac{(p^{n+1}_{i-1,j-1,k-1}-p^{n}_{i-1,j-1,k-1})- 
+			(p^{n+1}_{i-1,j,k-1}-p^{n}_{i-1,j,k-1})
+		}{\Delta x}\\
+			&=-\frac{p'_{i-1,j-1,k-1}-p'_{i-1,j,k-1}}{\Delta x}\\
+%z direction
+\rho & \frac{\tilde{w} - w^{n+1}}{\Delta t}  \\ &= - \frac{p^{n}_{i-1,j-1,k}- p^{n+1}_{i-1,j-1,k-1}-(p^{n+1}_{i-1,j-1,k}- p^{n}_{i-1,j-1,k-1})}{\Delta x}\\
+			&=-\frac{(p^{n+1}_{i-1,j-1,k-1}-p^{n}_{i-1,j-1,k-1})-(p^{n+1}_{i-1,j-1,k}-p^{n}_{i-1,j-1,k})}{\Delta x}\\
+			&=-\frac{p'_{i-1,j-1,k-1}-p'_{i-1,j-1,k}}{\Delta x}
+\end{split}
+\end{equation}
+	Where \(p'_{i,j-1,k-1}=p^{n+1}_{i,j-1,k-1}-p^{n}_{i,j-1,k-1}\) and \(p'_{i-1,j-1,k-1}=p^{n+1}_{i-1,j-1,k-1}-p^{n}_{i-1,j-1,k-1}\).  The same is valid for the other directions. The terms denoted by p' are the pressure correction terms. We can calculate the velocity at the next timestep if we know the pressure correction:
+\begin{equation}
+  \begin{split}
+    u^{n+1}=\tilde{u}-\frac{\Delta t}{\rho \Delta x}(p'_{i,j-1,k-1} - p'_{i-1,j-1,k-1})\\
+    v^{n+1}=\tilde{v}-\frac{\Delta t}{\rho \Delta x}(p'_{i-1,j,k-1} - p'_{i-1,j-1,k-1})\\
+    w^{n+1}=\tilde{w}-\frac{\Delta t}{\rho \Delta x}(p'_{i-1,j-1,k}- p'_{i-1,j-1,k-1})\\
+  \end{split} \label{next timestep velocities}
+\end{equation}
+However, we still need to know the pressure to solve this equation. The velocity and pressure should satisfy the continuity equation(the upper equation in \ref{NSE incompressible}). We will use it to obtain the pressure.\cite{MAC}
+\[
+  \pdv{u}{x}+\pdv{v}{y}+\pdv{w}{z}=0
+\]
+We can discretise this equation for the timestep n+1 to obtain a formula for which the sole unknowns are the pressures. The pressure term has the coordinates (i,j,k)
+\[
+  \begin{split}
+    \frac{u^{n+1}_{i+1,j+1,k+1}-u^{n+1}_{i, j+1, k+1}}{\Delta x} + 
+    \frac{v^{n+1}_{i+1,j+1,k+1}-v^{n+1}_{i+1, j, k+1}}{\Delta x} + 
+    \frac{w^{n+1}_{i+1,j+1,k+1}-w^{n+1}_{i+1, j+1, k}}{\Delta x}\\=0 
   \end{split}
 \]
+We can multiply by \(\Delta x\) on both sides.
+\[
+  \begin{split}
+    u^{n+1}_{i+1,j+1,k+1}-u^{n+1}_{i, j+1, k+1} + 
+    v^{n+1}_{i+1,j+1,k+1}-v^{n+1}_{i+1, j, k+1} + 
+    w^{n+1}_{i+1,j+1,k+1}-w^{n+1}_{i+1, j+1, k}\\=0 
+  \end{split}
+\]
+Next, we fill in the velocities using equation \ref{next timestep velocities}.
+\[
+  \begin{split}
+    \tilde{u}_{i+1,j+1,k+1} - \frac{\Delta t}{\rho \Delta x}(p'_{i+1,j,k}-p'_{i,j,k})
+    -\left(\tilde{u}_{i, j+1, k+1} - \frac{\Delta t}{\rho \Delta x}(p'_{i,j,k}-p'_{i-1,j,k})\right)\\
+    +\tilde{v}_{i+1,j+1,k+1} - \frac{\Delta t}{\rho \Delta x}(p'_{i,j+1,k}-p'_{i,j,k})
+    -\left(\tilde{v}_{i+1, j, k+1} - \frac{\Delta t}{\rho \Delta x}(p'_{i,j,k}-p'_{i,j-1,k})\right)\\
+    +\tilde{w}_{i+1,j+1,k+1} - \frac{\Delta t}{\rho \Delta x}(p'_{i,j,k+1}-p'_{i,j,k})
+    -\left(\tilde{w}_{i+1, j+1, k} - \frac{\Delta t}{\rho \Delta x}(p'_{i,j,k}-p'_{i,j,k-1})\right)\\
+    =0
+  \end{split}
+\]
+We move all the pressure terms to the right hand side of the equation and keep the velocity terms at the left hand side.
+\[
+  \begin{split}
+    \tilde{u}_{i+1,j+1,k+1}-\tilde{u}&_{i, j+1, k+1}
+    +\tilde{v}_{i+1,j+1,k+1}-\tilde{v}_{i+1, j, k+1}
+    +\tilde{w}_{i+1,j+1,k+1}
+    -\tilde{w}_{i+1, j+1, k}\\
+    &=\frac{\Delta t}{\rho \Delta x}(p'_{i+1,j,k}-p'_{i,j,k} - (p'_{i,j,k}-p'_{i-1,j,k})\\
+    &+p'_{i,j+1,k}-p'_{i,j,k}-(p'_{i,j,k}-p'_{i,j-1,k})\\
+    &+p'_{i,j,k+1}-p'_{i,j,k}- (p'_{i,j,k}-p'_{i,j,k-1}))\\
+    =>\tilde{u}_{i+1,j+1,k+1}&-\tilde{u}_{i, j+1, k+1}
+    +\tilde{v}_{i+1,j+1,k+1}-\tilde{v}_{i+1, j, k+1}
+    +\tilde{w}_{i+1,j+1,k+1}
+    -\tilde{w}_{i+1, j+1, k}\\
+    &=\frac{\Delta t}{\rho \Delta x}(p'_{i+1,j,k} + p'_{i-1,j,k}\\
+    &+p'_{i,j+1,k}+p'_{i,j-1,k}\\
+    &+p'_{i,j,k+1}+p'_{i,j,k-1} - 6 p'_{i,j,k})
+  \end{split}
+\]
+We assume that the pressure corrections for p other than (i,j,k) is zero. This will allow us to calculate the pressure correction in that point.\cite{MAC}
+\[
+  \begin{split}
+  \tilde{u}_{i+1,j+1,k+1}&-\tilde{u}_{i, j+1, k+1}
+    +\tilde{v}_{i+1,j+1,k+1}-\tilde{v}_{i+1, j, k+1}
+    \\ &+\tilde{w}_{i+1,j+1,k+1}
+    -\tilde{w}_{i+1, j+1, k}
+     =-6\frac{\Delta t}{\rho \Delta x}p'_{i,j,k}\\
+      =>p'_{i,j,k}&=-\frac{\rho \Delta x}{6\Delta t}(\tilde{u}_{i+1,j+1,k+1} \\ &-\tilde{u}_{i, j+1, k+1}
+    +\tilde{v}_{i+1,j+1,k+1}-\tilde{v}_{i+1, j, k+1}
+    \\ &+\tilde{w}_{i+1,j+1,k+1}
+    -\tilde{w}_{i+1, j+1, k})
+  \end{split}
+\]
+The above equation usually reaches convergence too slow, it should therefore be multiplied by a constant, \(\omega _0\).
+\[
+\begin{split}
+  p'_{i,j,k}&=-\omega _0\frac{\rho \Delta x}{6\Delta t}(\tilde{u}_{i+1,j+1,k+1}
+  \\ &-\tilde{u}_{i, j+1, k+1}
+  +\tilde{v}_{i+1,j+1,k+1}-\tilde{v}_{i+1, j, k+1}
+  \\ &+\tilde{w}_{i+1,j+1,k+1}
+  -\tilde{w}_{i+1, j+1, k})
+\end{split}
+\]
+Even though we multiply by \(\omega _0\), convergence is often not yet reached after one pressure correction. We therefore need to apply the pressure correction formula until convergence is reached.\cite{MAC}.
 
+Like we did with formulas in other chapters, we will convert the formulas from this chapter into code. We will not rewrite the formulas every time we use them, so we will create functions for them. We start with formula \ref{velocity tilde}:
+
+\begin{lstlisting}[language=Rust, style=boxed, breaklines=true]
+fn predict_velocity(provisonal_velocity_field: &mut VelocityGrid, velocity_field_last_time_step: &VelocityGrid, orthogonal_velocity_field_a: &VelocityGrid, orthogonal_velocity_field_b: &VelocityGrid, pressure_grid: [[[f32; PRESSUREGRIDSIZE[2]]; PRESSUREGRIDSIZE[1]]; PRESSUREGRIDSIZE[0]]){
+    let dim=get_dimension(provisonal_velocity_field.dimension);
+    for x in 1..(PRESSUREGRIDSIZE[0]-dim[0]+1) {
+        for y in 1..(PRESSUREGRIDSIZE[1]-dim[1]+1) {
+            for z in 1..(PRESSUREGRIDSIZE[2]-dim[2]+1) {
+                //convection term
+                let convection=DENSITY*(velocity_field_last_time_step.grid[x][y][z]*second_order_spatial_derivative(&velocity_field_last_time_step, x, y, z, velocity_field_last_time_step.dimension)
+                +get_velocity_from_orthogonal_grid(&orthogonal_velocity_field_a, x, y, z, velocity_field_last_time_step.dimension)*second_order_second_spatial_derivative(velocity_field_last_time_step, x, y, z, orthogonal_velocity_field_a.dimension)
+                +get_velocity_from_orthogonal_grid(&orthogonal_velocity_field_b, x, y, z, velocity_field_last_time_step.dimension)*second_order_second_spatial_derivative(velocity_field_last_time_step, x, y, z, orthogonal_velocity_field_b.dimension));
+                //Diffusion term
+                let diffusion=VISCOSITY*(laplacian(velocity_field_last_time_step, x, y, z));
+                //And finally, the provisional velocity
+                provisonal_velocity_field.grid[x][y][z]=velocity_field_last_time_step.grid[x][y][z]+TIMESTEPSIZE/DENSITY*(-convection+first_order_central_spatial_pressure_derivative(pressure_grid, x-1, y-1, z-1, velocity_field_last_time_step.dimension)+diffusion+EXTERNALFORCE[velocity_field_last_time_step.dimension]);
+            }
+        }
+    }
+
+}
+\end{lstlisting}
+The function above will create a provisional velocity grid from the last timestep grid. The convection terms is calculated as in section \
+
+
+
+
+
+\newpage  
+\section{Visualisation}
 \subsection{Drawing}
 The way we decided to show the movement of the fluids is by drawing arrows in a space of three dimensions. We do this by first loading in the arrow from an OBJ file. and OBJ file is the simplest way of storing three dimensional objects. We define the center of the arrow as (0,0,0). This makes rotation and translation easier. We also make sure that by default the arrow position is up, giving us the vector $\vec{v}=(0,0,1)$. We then create multiple instances of that arrow which we multiply with a quaternion that is the cross product of the desired rotation and the neutral rotation and we set the scalar equal to the distance between the endpoints of the vectors with the origin as a starting point. finally we transform the arrow by a vector $\vec{x}=(x,y,z)$, giving us the following transformation: 
 $\begin{bmatrix}
@@ -450,6 +628,20 @@ x & y & z & 1
 0 & 1 & 0 & 0\\
 x & y & z & 1
 \end{bmatrix}$
+The finally multiplication matrix then becomes: 
+$\begin{bmatrix}
+
+d & 0 & y & -x\\
+0 & d & x & y\\
+-y & -x & d & 0\\
+xd-zy+x & yd -zx - y & 2xy + zd & -x^2 + y^2 + d 
+
+\end{bmatrix}$
+where $d = ||\vec{x}-\vec{v}||$.\cite{Quaternion rotation}
+\subsection{Data capturing}
+In order to actually show the data, we need to draw the arrows by defining the vertices that make up the arrows. We then multiply it with the transformation matrix from the previous chapter and finally with a standard camera matrix: 
+
+\section{Conclusion}
 
 
 \newpage
@@ -515,9 +707,13 @@ x & y & z & 1
 \url{https://www.youtube.com/watch?v=Kf_RHzaqFBc}
 \bibitem{MAC}
 \url{https://www.youtube.com/watch?v=0qtvRjuTihY}
+\bibitem{enterfea}
+\url{https://enterfea.com/implicit-vs-explicit/}
 \bibitem{Vulkan}
 https://vulkan-tutorial.com/
 \bibitem{visual room}
 \url{http://thevisualroom.com/marker_and_cell_method.html}
+\bibitem{Quaternion rotation}
+\url{https://stackoverflow.com/questions/1171849/finding-quaternion-representing-the-rotation-from-one-vector-to-another}
 \end{thebibliography}
 \end{document}
