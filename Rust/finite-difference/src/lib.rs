@@ -36,12 +36,12 @@ pub fn initialize_simulation(){
         let render_data = simulation_time_step(&mut velocity_x, &mut velocity_y, &mut velocity_z, &mut pressure_grid);
         renderer.transform_grid(render_data);
         match renderer.await_request(){
-            RenderResult::NextStep => {}
-            RenderResult::Shutdown=>{return}
+           RenderResult::NextStep => {}
+           RenderResult::Shutdown=>{return}
         };
+    //
     }
 }
-
 fn initialize_pressure_grid(pressure_grid: &mut [[[f32; PRESSUREGRIDSIZE[2]];PRESSUREGRIDSIZE[1]];PRESSUREGRIDSIZE[0]]){
     for x in 0..(PRESSUREGRIDSIZE[0]-1){//velocty_grid has PRESSUREGRIDSIZE[dimension] elements, so loop from 0 to PRESSUREGRIDSIZE[dimension]-1.
         for y in 0..(PRESSUREGRIDSIZE[1]-1){
@@ -89,7 +89,7 @@ fn simulation_time_step(velocity_grid_x: &mut VelocityGrid, velocity_grid_y: &mu
         update_velocity_field(&mut provisional_velocity_z);
         
         //5)Update boundary values
-        crate::set_wall_boundary_conditions( &mut provisional_velocity_x.grid,  &mut provisional_velocity_y.grid,  &mut provisional_velocity_z.grid);
+        set_wall_boundary_conditions( &mut provisional_velocity_x.grid,  &mut provisional_velocity_y.grid,  &mut provisional_velocity_z.grid);
         
         //6)Check convergence
         let mut total_error:f32=0.0;
@@ -173,7 +173,7 @@ fn predict_velocity(provisonal_velocity_field: &mut VelocityGrid, velocity_field
                 //Diffusion term
                 let diffusion=VISCOSITY*(laplacian(velocity_field_last_time_step, x, y, z));
                 //And finally, the provisional velocity
-                provisonal_velocity_field.grid[x][y][z]=velocity_field_last_time_step.grid[x][y][z]+TIMESTEPSIZE/DENSITY*(-convection_term(velocity_field_last_time_step, orthogonal_velocity_field_a, orthogonal_velocity_field_b, x, y, z)+first_order_central_spatial_pressure_derivative(pressure_grid, x-1, y-1, z-1, velocity_field_last_time_step.dimension)+diffusion+EXTERNALFORCE[velocity_field_last_time_step.dimension]);
+                provisonal_velocity_field.grid[x][y][z]=velocity_field_last_time_step.grid[x][y][z]+TIMESTEPSIZE/DENSITY*(-convection_term(velocity_field_last_time_step, orthogonal_velocity_field_a, orthogonal_velocity_field_b, x, y, z)-first_order_central_spatial_pressure_derivative(pressure_grid, x-1, y-1, z-1, velocity_field_last_time_step.dimension)+diffusion+EXTERNALFORCE[velocity_field_last_time_step.dimension]);
             }
         }
     }
