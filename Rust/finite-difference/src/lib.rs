@@ -3,11 +3,12 @@ use std::vec;
 use renderer::{Renderer, RenderResult};
 
 //Physical constants
-const GRIDELEMENTSCALE: f32 = 0.005;//The size of a grid element in meters
+const GRIDELEMENTSCALE: f32 = 0.005;//The size of a grid element in meters(denoted in equations as delta x)
 const TIMESTEPSIZE: f32 = 0.0005;//The size of a time step size in seconds
 const DENSITY: f32 = 1000.0;//Density of the liquid in kg/m^{3}. We simulate water.
 const EXTERNALFORCE : [f32; 3] = [0.0,0.0, -9.81];//Gravity in N
 const VISCOSITY: f32 = 0.001;//Viscosity in Pa*s.
+const ATMOSPHERIC_PRESSURE: f32=101.325;//Atmospheric pressure in Pa
 
 const MAXITERATIONSPERTIMEFRAME:i32=2000;//This constant sets a maximum so the computer can not get in an infinite loop.
 const RELEXATION: f32=1.0;//Pressure correction is often underestimated, this factor should be between 1.4 and 1.8.
@@ -26,13 +27,13 @@ pub struct VelocityGrid{
 pub fn initialize_simulation(){
     let renderer = Renderer::new(true);
     let mut pressure_grid: [[[f32; PRESSUREGRIDSIZE[2]]; PRESSUREGRIDSIZE[1]]; PRESSUREGRIDSIZE[0]]=[[[0.0; PRESSUREGRIDSIZE[2]]; PRESSUREGRIDSIZE[1]]; PRESSUREGRIDSIZE[0]];//pressureGrid[x][y][z] is the pressure at coordinates (x,y,z)
-    //The size of the velocity grid should be 1 bigger in every spatial dimension(so that's all dimensions in the array) because we use a collocated grid
-    let mut velocity_x = VelocityGrid{grid: vec![vec![vec![1.0;PRESSUREGRIDSIZE[2]+2]; PRESSUREGRIDSIZE[1]+2]; PRESSUREGRIDSIZE[0]+1], dimension:0};// z,y,x !!!
+    let mut velocity_x = VelocityGrid{grid: vec![vec![vec![0.0;PRESSUREGRIDSIZE[2]+2]; PRESSUREGRIDSIZE[1]+2]; PRESSUREGRIDSIZE[0]+1], dimension:0};// z,y,x !!!
     let mut velocity_y = VelocityGrid{grid: vec![vec![vec![0.0;PRESSUREGRIDSIZE[2]+2]; PRESSUREGRIDSIZE[1]+1]; PRESSUREGRIDSIZE[0]+2], dimension:1}; 
     let mut velocity_z = VelocityGrid{grid: vec![vec![vec![0.0;PRESSUREGRIDSIZE[2]+1]; PRESSUREGRIDSIZE[1]+2]; PRESSUREGRIDSIZE[0]+2], dimension:2}; 
     
     initialize_pressure_grid(&mut pressure_grid);
     loop{
+    for i in 0..20{
         let render_data = simulation_time_step(&mut velocity_x, &mut velocity_y, &mut velocity_z, &mut pressure_grid);
         renderer.transform_grid(render_data);
         match renderer.await_request(){
@@ -47,7 +48,7 @@ fn initialize_pressure_grid(pressure_grid: &mut [[[f32; PRESSUREGRIDSIZE[2]];PRE
         for y in 0..(PRESSUREGRIDSIZE[1]-1){
             for z in 0..(PRESSUREGRIDSIZE[2]-1){
                 //The pressure should be the atmosferic pressure(101,325Pa) plus the pressure that is exercised by the water above a point on the water at that point. 
-                pressure_grid[x][y][z]=101.325+9810.0*(PRESSUREGRIDSIZE[2] as f32 - z as f32 -1.0)*GRIDELEMENTSCALE;
+                pressure_grid[x][y][z]=ATMOSPHERIC_PRESSURE+DENSITY*(PRESSUREGRIDSIZE[2] as f32 - z as f32)*GRIDELEMENTSCALE*EXTERNALFORCE[2];
             }
         }
     }
@@ -84,17 +85,18 @@ fn simulation_time_step(velocity_grid_x: &mut VelocityGrid, velocity_grid_y: &mu
         set_wall_boundary_conditions( &mut provisional_velocity_x,  &mut provisional_velocity_y,  &mut provisional_velocity_z, 1.0);
         
         //6)Check convergence
-        if check_convergence(&provisional_velocity_x, &provisional_velocity_y, &provisional_velocity_z) {
+        if check_convergence(&provisional_velocity_x, &provisional_velocity_y, &provisional_velocity_z) {// If the continuity equation has converged we can go to the next timestep
             velocity_grid_x.grid=provisional_velocity_x.grid.clone();
             velocity_grid_y.grid=provisional_velocity_y.grid.clone();
             velocity_grid_z.grid=provisional_velocity_z.grid.clone();
             *i=MAXITERATIONSPERTIMEFRAME;
         }else{
-            if *i+1==MAXITERATIONSPERTIMEFRAME{
-                println!("Iteration {} did not converge", i);
+            println!{"convergence has not yet been reached, trying again, iteration: {}", i};
+            if *i+1==MAXITERATIONSPERTIMEFRAME{//If the continuity equation has not converged after many iterations something probably went wrong. Therefore the program will have to be terminated then.
+                println!("Last iteration {} did not converge", i);
                 std::process::exit(1);
             }
-            println!{"convergence has not yet been reached, trying again, iteration: {}", i};
+            
         }
         *i=*i+1;
         println!("i is {}", i);
@@ -193,7 +195,7 @@ fn check_convergence(provisional_velocity_x:&VelocityGrid, provisional_velocity_
                     +first_order_central_spatial_derivative(&provisional_velocity_y, x, y, z)
                     +first_order_central_spatial_derivative(&provisional_velocity_z, x, y, z);    
                 if error.abs()>ALLOWEDERROR{
-                    println!("Convergence not yet reached, error is {}", error);
+                    println!("Convergence not yet reached, error is {} at ({}, {}, {})", error, x, y, z );
                     return false;
 
                 }
@@ -248,29 +250,16 @@ fn set_orthogonal_boundary_condition_at_wall(orthogonal_velocity_grid: &mut Velo
 }
 
 //wall_is_on_lower_side=0 means the wall is on the side with lower coordinates seen from the dry side and wall_is_on_lower_side=1 means the wall is on the side with higher coordinates. 
+//orthogonal_dimension is the dimension number(0 for x, 1 for y, 2 for z) of the dimension orthogonal to the wall
 fn set_parallel_boundary_condition_at_wall(parallel_velocity_grid: &mut VelocityGrid, min_coords: [usize; 3], max_coords: [usize; 3], wall_is_on_lower_side: bool, orthogonal_dimension: usize){
     let dim=get_dimension(orthogonal_dimension);
-    let transformation_in_one_dimension=1 - 2 * (wall_is_on_lower_side as isize);// -1 when a lower element is neede, +1 when a higher element is neede
+    let transformation_in_one_dimension=1 - 2 * (wall_is_on_lower_side as isize);// -1 when a lower element is needed, +1 when a higher element is needed
     let transformation_to_neighbor:[isize; 3]=[(dim[0] as isize) * transformation_in_one_dimension, (dim[1] as isize) * transformation_in_one_dimension, (dim[2] as isize) * transformation_in_one_dimension];// This is the transformation to the neighbor opposite of the wall
     for x in min_coords[0]..=max_coords[0]{
         for y in min_coords[1]..=max_coords[1]{
             for z in min_coords[2]..=max_coords[2]{
                 //The parallel velocity should be the opposite of the parallel velocity on the other side of the wall, so that the average is zero.
                 parallel_velocity_grid.grid[x][y][z]=-parallel_velocity_grid.grid[(x as isize + transformation_to_neighbor[0])as usize][(y as isize + transformation_to_neighbor[1]) as usize][(z as isize+transformation_to_neighbor[2]) as usize];          
-            }
-        }
-    }
-}
-
-fn set_boundary_condition_in_area(orthogonal_velocity_grid: &mut Vec<Vec<Vec<f32>>>, parallel_velocity_grid_a: &mut Vec<Vec<Vec<f32>>>, parallel_velocity_grid_b: &mut Vec<Vec<Vec<f32>>>, min_coords: [usize; 3], max_coords: [usize; 3], transformation_to_neighbor : [isize;3], value:f32){
-    for x in min_coords[0]..=max_coords[0]{
-        for y in min_coords[1]..=max_coords[1]{
-            for z in min_coords[2]..=max_coords[2]{
-                orthogonal_velocity_grid[x][y][z]=value;
-                //let a=(x as isize + transformation_to_neighbor[0])as usize;
-                parallel_velocity_grid_a[x][y][z]=-parallel_velocity_grid_a[(x as isize + transformation_to_neighbor[0])as usize][(y as isize + transformation_to_neighbor[1]) as usize][(z as isize+transformation_to_neighbor[2]) as usize];
-                parallel_velocity_grid_b[x][y][z]=-parallel_velocity_grid_b[(x as isize + transformation_to_neighbor[0])as usize][(y as isize + transformation_to_neighbor[1]) as usize][(z as isize+transformation_to_neighbor[2]) as usize];
-            
             }
         }
     }
