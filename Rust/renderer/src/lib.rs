@@ -55,10 +55,10 @@ impl Renderer{
                         match event{
                             WindowEvent::CloseRequested=>{*control_flow=ControlFlow::Exit;}
                             WindowEvent::KeyboardInput{device_id:_, is_synthetic:_, input}=>{
-                                if input.virtual_keycode == Some(VirtualKeyCode::F10){
+                                if input.virtual_keycode == Some(VirtualKeyCode::F10) && input.state == ElementState::Pressed{
                                     renderer.allocator.dump_contents();
                                 }
-                                else if input.virtual_keycode == Some(VirtualKeyCode::N){
+                                else if input.virtual_keycode == Some(VirtualKeyCode::N) && input.state == ElementState::Pressed{
                                     shutdown_sender.send(RenderResult::NextStep).unwrap();
                                 }
                             }
