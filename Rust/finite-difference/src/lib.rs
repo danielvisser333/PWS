@@ -32,7 +32,7 @@ pub fn initialize_simulation(){
     let mut velocity_z = VelocityGrid{grid: vec![vec![vec![0.0;PRESSUREGRIDSIZE[2]+1]; PRESSUREGRIDSIZE[1]+2]; PRESSUREGRIDSIZE[0]+2], dimension:2}; 
     
     initialize_pressure_grid(&mut pressure_grid);
-    let i=0;
+    let mut i: i32=0;
     loop{
     //for i in 0..50{
         let render_data = simulation_time_step(&mut velocity_x, &mut velocity_y, &mut velocity_z, &mut pressure_grid, i);
