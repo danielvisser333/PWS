@@ -12,7 +12,7 @@ const ATMOSPHERIC_PRESSURE: f32=0.0;//101.325;//Atmospheric pressure in Pa
 
 const MAXITERATIONSPERTIMEFRAME:i32=2000;//This constant sets a maximum so the computer can not get in an infinite loop.
 const RELEXATION: f32=1.0;//Pressure correction is often underestimated, this factor should be between 1.4 and 1.8.
-const ALLOWEDERROR: f32=0.5; 
+const ALLOWEDERROR: f32=0.00005; 
 
 //Pressure is measured in Pascal, because it is the standard SI unit for pressure.
 
@@ -25,6 +25,7 @@ pub struct VelocityGrid{
 }
 
 pub fn initialize_simulation(){
+    
     let renderer = Renderer::new(false);
     let mut pressure_grid: [[[f32; PRESSUREGRIDSIZE[2]]; PRESSUREGRIDSIZE[1]]; PRESSUREGRIDSIZE[0]]=[[[0.0; PRESSUREGRIDSIZE[2]]; PRESSUREGRIDSIZE[1]]; PRESSUREGRIDSIZE[0]];//pressureGrid[x][y][z] is the pressure at coordinates (x,y,z)
     let mut velocity_x = VelocityGrid{grid: vec![vec![vec![0.0;PRESSUREGRIDSIZE[2]+2]; PRESSUREGRIDSIZE[1]+2]; PRESSUREGRIDSIZE[0]+1], dimension:0};// z,y,x !!!
@@ -43,6 +44,7 @@ pub fn initialize_simulation(){
         };
     i=i+1;
     }
+    println!("Simulation finished");
 }
 fn initialize_pressure_grid(pressure_grid: &mut [[[f32; PRESSUREGRIDSIZE[2]];PRESSUREGRIDSIZE[1]];PRESSUREGRIDSIZE[0]]){
     for x in 0..(PRESSUREGRIDSIZE[0]-1){//velocty_grid has PRESSUREGRIDSIZE[dimension] elements, so loop from 0 to PRESSUREGRIDSIZE[dimension]-1.
@@ -138,7 +140,7 @@ fn predict_velocity(provisonal_velocity_field: &mut VelocityGrid, velocity_field
                 //Diffusion term
                 let diffusion=VISCOSITY*(laplacian(velocity_field_last_time_step, x, y, z));
                 //And finally, the provisional velocity
-                provisonal_velocity_field.grid[x][y][z]=velocity_field_last_time_step.grid[x][y][z]+TIMESTEPSIZE/DENSITY*(-convection_term(velocity_field_last_time_step, orthogonal_velocity_field_a, orthogonal_velocity_field_b, x, y, z)-first_order_central_spatial_pressure_derivative(pressure_grid, x-1, y-1, z-1, velocity_field_last_time_step.dimension)+diffusion+EXTERNALFORCE[velocity_field_last_time_step.dimension]);
+                provisonal_velocity_field.grid[x][y][z]=velocity_field_last_time_step.grid[x][y][z]+TIMESTEPSIZE/DENSITY*(-convection_term(velocity_field_last_time_step, orthogonal_velocity_field_a, orthogonal_velocity_field_b, x, y, z)-first_order_central_spatial_pressure_derivative(pressure_grid, x-1, y-1, z-1, velocity_field_last_time_step.dimension)+diffusion+DENSITY*EXTERNALFORCE[velocity_field_last_time_step.dimension]);
             }
         }
     }
@@ -190,9 +192,9 @@ fn check_convergence(provisional_velocity_x:&VelocityGrid, provisional_velocity_
     for x in 1..PRESSUREGRIDSIZE[0]-1{
         for y in 1..PRESSUREGRIDSIZE[1]-1{
             for z in 1..PRESSUREGRIDSIZE[2]-1{
-                let error=first_order_central_spatial_derivative(&provisional_velocity_x, x, y, z)
-                    +first_order_central_spatial_derivative(&provisional_velocity_y, x, y, z)
-                    +first_order_central_spatial_derivative(&provisional_velocity_z, x, y, z);    
+                let error=first_order_central_spatial_derivative_at_pressure_coordinates(&provisional_velocity_x, x, y, z)
+                    +first_order_central_spatial_derivative_at_pressure_coordinates(&provisional_velocity_y, x, y, z)
+                    +first_order_central_spatial_derivative_at_pressure_coordinates(&provisional_velocity_z, x, y, z);    
                 if error.abs()>ALLOWEDERROR{
                     println!("Convergence not yet reached, error is {} at ({}, {}, {})", error, x, y, z );
                     return false;
@@ -301,9 +303,9 @@ fn first_order_forward_spatial_derivative(f: &VelocityGrid, x:usize, y:usize, z:
     return (f.grid[x+position_difference[0]][y+position_difference[1]][z+position_difference[2]]-f.grid[x][y][z])/GRIDELEMENTSCALE;
 }
 
-fn first_order_central_spatial_derivative(f: &VelocityGrid, x: usize, y: usize, z:usize)->f32{//practically identical to first_order_forward_spatial_derivative, but for clarity we keep it.
+fn first_order_central_spatial_derivative_at_pressure_coordinates(f: &VelocityGrid, x: usize, y: usize, z:usize)->f32{//Calculates the central spatial derivative, uses pressure coordinates
     let dim=get_dimension(f.dimension);
-    return (f.grid[x+dim[0]][y+dim[1]][z+dim[2]]-f.grid[x][y][z])/GRIDELEMENTSCALE;
+    return (f.grid[x+1][y+1][z+1]-f.grid[x+1-dim[0]][y+1-dim[1]][z+1-dim[2]])/GRIDELEMENTSCALE;
 }
 
 fn second_order_spatial_derivative(f:&VelocityGrid, x: usize, y:usize, z:usize, dimension_number:usize) -> f32{
