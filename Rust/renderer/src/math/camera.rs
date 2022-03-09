@@ -61,11 +61,24 @@ impl Camera{
     pub fn mouse_movement(&mut self, delta : (f64,f64)){
         let delta = (-delta.0/100.0,delta.1);
         if self.left_mouse_button_pressed{
-            let sin_x = cgmath::Angle::sin(Deg(delta.0 as f32/2.0));
-            let cos_x = cgmath::Angle::cos(Deg(delta.0 as f32/2.0));
+            //Horizontal movement
+            let sin_x = cgmath::Angle::sin(Deg(delta.0 as f32*2.0));
+            let cos_x = cgmath::Angle::cos(Deg(delta.0 as f32*2.0));
             let quat_alpha = Quaternion::new(0.0, self.up.x - self.center.x, self.up.y - self.center.y, self.up.z - self.center.z).normalize();
             let mut quat_q = sin_x * quat_alpha;
             quat_q.s += cos_x;
+            let quat_beta = Quaternion::new(0.0, self.eye.x-self.center.x, self.eye.y-self.center.y, self.eye.z-self.center.z);
+            let new_eye = (quat_q*quat_beta*quat_q.conjugate()).v;
+            self.eye = Point3::new(new_eye.x+self.center.x, new_eye.y+self.center.y, new_eye.z+self.center.z);
+            self.view = Matrix4::look_at_rh(self.eye,self.center, self.up);
+            //Vertical movement
+            let eye_to_center = point_to_vector(self.eye) - point_to_vector(self.center);
+            let axis = eye_to_center.cross(Vector3::new(0.0, 0.0, 1.0));
+            let quat_alpha = Quaternion::from_sv(0.0, axis).normalize();
+            let sin_y = cgmath::Angle::sin(Deg(delta.1 as f32/20.0));
+            let cos_y = cgmath::Angle::cos(Deg(delta.1 as f32/20.0));
+            let mut quat_q = sin_y * quat_alpha;
+            quat_q.s += cos_y;
             let quat_beta = Quaternion::new(0.0, self.eye.x-self.center.x, self.eye.y-self.center.y, self.eye.z-self.center.z);
             let new_eye = (quat_q*quat_beta*quat_q.conjugate()).v;
             self.eye = Point3::new(new_eye.x+self.center.x, new_eye.y+self.center.y, new_eye.z+self.center.z);
@@ -81,4 +94,7 @@ impl Camera{
             self.projection[1][1] = self.projection[1][1] * -1.0;
         };
     }
+}
+fn point_to_vector(point : Point3<f32>) -> Vector3<f32>{
+    return Vector3{x : point.x, y : point.y, z : point.z}
 }
