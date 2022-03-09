@@ -26,23 +26,23 @@ pub struct VelocityGrid{
 
 pub fn initialize_simulation(){
     
-    //let renderer = Renderer::new(false);
+    let renderer = Renderer::new(false);
     let mut pressure_grid: [[[f32; PRESSUREGRIDSIZE[2]]; PRESSUREGRIDSIZE[1]]; PRESSUREGRIDSIZE[0]]=[[[0.0; PRESSUREGRIDSIZE[2]]; PRESSUREGRIDSIZE[1]]; PRESSUREGRIDSIZE[0]];//pressureGrid[x][y][z] is the pressure at coordinates (x,y,z)
     let mut velocity_x = VelocityGrid{grid: vec![vec![vec![0.0;PRESSUREGRIDSIZE[2]+2]; PRESSUREGRIDSIZE[1]+2]; PRESSUREGRIDSIZE[0]+1], dimension:0};// z,y,x !!!
     let mut velocity_y = VelocityGrid{grid: vec![vec![vec![0.0;PRESSUREGRIDSIZE[2]+2]; PRESSUREGRIDSIZE[1]+1]; PRESSUREGRIDSIZE[0]+2], dimension:1}; 
     let mut velocity_z = VelocityGrid{grid: vec![vec![vec![0.0;PRESSUREGRIDSIZE[2]+1]; PRESSUREGRIDSIZE[1]+2]; PRESSUREGRIDSIZE[0]+2], dimension:2}; 
     
     initialize_pressure_grid(&mut pressure_grid);
-    //let mut i: i32=0;
-    //loop{
-    for i in 0..50{
+    let mut i: i32=0;
+    loop{
+    //for i in 0..50{
         let render_data = simulation_time_step(&mut velocity_x, &mut velocity_y, &mut velocity_z, &mut pressure_grid, i);
-        //renderer.transform_grid(render_data);
-        //match renderer.await_request(){
-        //  RenderResult::NextStep => {}
-        //   RenderResult::Shutdown=>{return}
-        //};
-    //i=i+1;
+        renderer.transform_grid(render_data);
+        match renderer.await_request(){
+          RenderResult::NextStep => {}
+           RenderResult::Shutdown=>{return}
+        };
+    i=i+1;
     }
     println!("Simulation finished");
 }
