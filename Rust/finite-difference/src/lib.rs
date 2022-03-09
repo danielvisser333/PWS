@@ -6,7 +6,7 @@ use renderer::{Renderer, RenderResult};
 const GRIDELEMENTSCALE: f32 = 0.005;//The size of a grid element in meters(denoted in equations as delta x)
 const TIMESTEPSIZE: f32 = 0.0005;//The size of a time step size in seconds
 const DENSITY: f32 = 1000.0;//Density of the liquid in kg/m^{3}. We simulate water.
-const EXTERNALFORCE : [f32; 3] = [0.0,0.0, 0.0];//Gravity in N
+const EXTERNALFORCE : [f32; 3] = [0.0,0.0, -9.81];//Gravity in N
 const VISCOSITY: f32 = 0.001;//Viscosity in Pa*s.
 const ATMOSPHERIC_PRESSURE: f32=0.0;//101.325;//Atmospheric pressure in Pa
 
@@ -26,23 +26,23 @@ pub struct VelocityGrid{
 
 pub fn initialize_simulation(){
     
-    let renderer = Renderer::new(false);
+    //let renderer = Renderer::new(false);
     let mut pressure_grid: [[[f32; PRESSUREGRIDSIZE[2]]; PRESSUREGRIDSIZE[1]]; PRESSUREGRIDSIZE[0]]=[[[0.0; PRESSUREGRIDSIZE[2]]; PRESSUREGRIDSIZE[1]]; PRESSUREGRIDSIZE[0]];//pressureGrid[x][y][z] is the pressure at coordinates (x,y,z)
     let mut velocity_x = VelocityGrid{grid: vec![vec![vec![0.0;PRESSUREGRIDSIZE[2]+2]; PRESSUREGRIDSIZE[1]+2]; PRESSUREGRIDSIZE[0]+1], dimension:0};// z,y,x !!!
     let mut velocity_y = VelocityGrid{grid: vec![vec![vec![0.0;PRESSUREGRIDSIZE[2]+2]; PRESSUREGRIDSIZE[1]+1]; PRESSUREGRIDSIZE[0]+2], dimension:1}; 
     let mut velocity_z = VelocityGrid{grid: vec![vec![vec![0.0;PRESSUREGRIDSIZE[2]+1]; PRESSUREGRIDSIZE[1]+2]; PRESSUREGRIDSIZE[0]+2], dimension:2}; 
     
     initialize_pressure_grid(&mut pressure_grid);
-    let mut i: i32=0;
-    loop{
-    //for i in 0..50{
+    //let mut i: i32=0;
+    //loop{
+    for i in 0..50{
         let render_data = simulation_time_step(&mut velocity_x, &mut velocity_y, &mut velocity_z, &mut pressure_grid, i);
-        renderer.transform_grid(render_data);
-        match renderer.await_request(){
-          RenderResult::NextStep => {}
-           RenderResult::Shutdown=>{return}
-        };
-    i=i+1;
+        //renderer.transform_grid(render_data);
+        //match renderer.await_request(){
+        //  RenderResult::NextStep => {}
+        //   RenderResult::Shutdown=>{return}
+        //};
+    //i=i+1;
     }
     println!("Simulation finished");
 }
@@ -107,7 +107,7 @@ fn simulation_time_step(velocity_grid_x: &mut VelocityGrid, velocity_grid_y: &mu
         update_pressure(pressure_grid, &pressure_correction);
     }  
     println!("Finished! At (2,2,2) velocity is ({}, {}, {})",velocity_grid_x.grid[2][2][2], velocity_grid_y.grid[2][2][2],velocity_grid_z.grid[2][2][2]);
-    return convert_velocities_to_collocated_grid_and_visualise([0,0,0], PRESSUREGRIDSIZE, [5,5,5], velocity_grid_x, velocity_grid_y, velocity_grid_z);
+    return convert_velocities_to_collocated_grid_and_visualise([1,1,1], [PRESSUREGRIDSIZE[0]-1, PRESSUREGRIDSIZE[1]-1, PRESSUREGRIDSIZE[2]-1], [4,4,4], velocity_grid_x, velocity_grid_y, velocity_grid_z);
 }
 
 //min_coords and max_coords are the pressure coordinates of which we want to know the velocities(this function will determine those velocities by taking the average of nearby velocities)
