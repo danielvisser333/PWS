@@ -42,7 +42,7 @@ pub fn initialize_simulation(){
           RenderResult::NextStep => {}
            RenderResult::Shutdown=>{return}
         };
-    i=i+1;
+        i=i+1;
     }
     println!("Simulation finished");
 }
