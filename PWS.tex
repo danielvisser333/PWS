@@ -22,6 +22,9 @@
 %For linking to images
 \usepackage{caption}
 
+\usepackage{graphicx}
+\graphicspath{ {./images/} }
+
 \title{PWS/Meesterproef vloeistofdynamica}
 \author{Wiebe Derksen and Daniël Visser}
 
@@ -36,34 +39,7 @@
 \newpage
 %Start van het PWS zelf
 \section{Introduction}
-People have been simulating liquids and gasses for decades using computers. We thought this would be an interesting subject to write our PWS about.
-\newpage
-
-\section{The Navier-Stokes equations}
-The Navier Stokes equations are \cite{Navier Stokes compressible}:
-\begin{equation}
-%x-component
-\begin{multlined}
-\rho (\pdv{u}{t} + u \pdv{u}{x} + v \pdv{u}{y}+w\pdv{u}{z}) \\ = \rho g_{x}-\pdv{P}{x}+\pdv{x} \bqty{2\mu \pdv{u}{x} + \lambda div \vec{V}}\\ + \pdv{y} \bqty{\mu(\pdv{u}{y}+\pdv{v}{z})}+\pdv{z} \bqty{\mu (\pdv{u}{z}+\pdv{w}{x})}
-\end{multlined}
-\label{NSE-x}
-\end{equation}
-
-%y-component
-\begin{equation}
-\begin{split}
-\rho(\pdv{v}{t}&+u\pdv{v}{x}+v\pdv{v}{y}+w\pdv{v}{z}) \\&=\rho g_{y} -\pdv{P}{y} +\pdv{x} \bqty{\mu(\pdv{u}{y}+\pdv{v}{x})}\\&+ \pdv{y} \bqty{2\mu \pdv{v}{y} + \lambda div\vec{V}} +\pdv{z} \bqty{\mu(\pdv{v}{z}+\pdv{w}{y})}
-\end{split}
-\label{NSE-y}
-\end{equation}
-
-%z-component
-\begin{equation}
-\begin{split}
-\rho (\pdv{v}{t}& + u \pdv{w}{x} + v \pdv{w}{y} +  w \pdv{w}{x}) \\&= \rho g_{z} - \pdv{P}{z} + \pdv{x} \bqty{\mu(\pdv{u}{z}+\pdv{w}{x})}+\\ &\pdv{y}\bqty{\mu (\pdv{v}{z}+\pdv{w}{y})} +\pdv{x} 2\mu  \pdv{w}{y}+\lambda div \vec(V)
-\label{NSE-z}
-\end{split}
-\end{equation}
+People have been simulating  for decades using computers, for aeronautics, movies, games and more. We thought this would be an interesting subject to write our PWS about because it is a quite difficult subject, but at the same time we both have a great interest in both physics and mathematics. We thought it would be easily doable but as time progressed , we started to realize this project would take quite a bit more time than we had expected. Nevertheless, it was a really interesting project of which we learned a lot. 
 
 \newpage
 \section{What algorithms are feasible to implement?}
@@ -163,6 +139,27 @@ The dynamic boundary condition assumes the pressure on the free surface must be 
 \newpage
 %Programming
 \section{The implementation of the finite difference method}
+\subsection{Constants} \label{Constants}
+First, we define some constants. We have not taken significance in account, because we sometimes needed to add more zeros to prevent errors. These errors happen because Rust only wants decimal numbers as f32, although they can end with .0 .
+\begin{lstlisting}[language=Rust, style=boxed, breaklines=true]
+///Physical constants
+const GRIDELEMENTSCALE: f32 = 0.05;//The size of a grid element in meters(denoted in equations as delta x)
+const TIMESTEPSIZE: f32 = 0.0005;//The size of a time step size in seconds
+const DENSITY: f32 = 1000.0;//Density of the liquid in kg/m^{3}. We simulate water.
+const EXTERNALFORCE : [f32; 3] = [0.0,0.0,-9.81];//Gravity in N
+const VISCOSITY: f32 = 0.001;//Viscosity in Pa*s.
+const ATMOSPHERIC_PRESSURE: f32=101.325;//Atmospheric pressure in Pa
+
+const MAXITERATIONSPERTIMEFRAME:i32=200;//This constant sets a maximum so the computer can not get in an infinite loop.
+const RELEXATION: f32=1.0;//Pressure correction is often underestimated, this factor should be between 1.4 and 1.8.
+const ALLOWEDERROR: f32=0.000001; 
+
+//Pressure is measured in Pascal, because it is the standard SI unit for pressure.
+
+//Grid size(e.g. number of elements in each dimension)
+const PRESSUREGRIDSIZE: [usize; 3] = [10,10,10];//x,y,z
+\end{lstlisting}
+\newpage
 \subsection{Odd-even decoupling} \label{odd-even}
 
 %Image
@@ -193,7 +190,7 @@ The dynamic boundary condition assumes the pressure on the free surface must be 
 %Odd-even decoupling
 The Finite Difference Method calculates the pressure and velocity at discrete grid points. We can choose ourselves which variables will be calculated at which points. It would be the most easy to store all variables at every point. Such a grid is called a collocated grid\cite{Staggered grid}. However, as figure \ref{Odd-even decoupling} shows, there will be no fluid flow between cell i-1 and i and cell i and i+1 when the pressure in cells i-1 and i+1 is equal in such a grid. This phenomenon is called odd-even decoupling and happens because the derivative in cell i will be zero\cite{Staggered grid}. It is called so because information from odd and even cells are not combined properly\cite{Staggered grid}. To solve that problem we will use a staggered grid, such as in the right side of figure \ref{Odd-even decoupling}. A staggered grid consists of cells. The pressure is stored in the cell center and the velocities in the cell edges that are perpendicular to them\cite{Staggered grid}. As one can see, the derivatives will not be zero anymore, since the flow between two cells will not depend on the pressure in other cells anymore.
 \newpage
-\subsection{Boundary conditions and walls}
+\subsection{Boundary conditions and walls} \label{Boundary conditions and walls}
 \begin{figure}[ht]
 % body of the figure
 \centering
@@ -239,7 +236,7 @@ In short, we have the following boundary conditions: \\
 2) The imaginary velocities are equal to the inverse of the velocities opposite of the wall.
 
 \newpage
-\subsection{The sizes of the grids}
+\subsection{The sizes of the grids} \label{The sizes of the grids}
 \begin{figure}[ht]
 \centering
 % body of the figure
@@ -264,7 +261,7 @@ In short, we have the following boundary conditions: \\
 \label{grid sizes}
 \end{figure}
 
-If we were using a collocated grid we would store our data in an array with the desired dimensions. However, we are using a staggered grid. This complicates the grid sizes a lot. We will have to use three seperate grids for velocity with different sizes and another grid for the pressure. Let u, v and w denote the velocities in respectively the x, y and z direction. The size of the pressure grid are m*n*o. In the directions that are orthogonal to the velocities of a velocity grid the size of that grid will be the size of the pressure grid plus one. We have illustrated this in figure \ref{grid sizes}. The size of the grid in the dimension that is parallel to the velocities that the grid contains is the pressure grid size plus two. The sizes in those directions are that size because of the imaginary velocities we need to store.
+If we were using a collocated grid we would store our data in an array with the desired dimensions. However, we are using a staggered grid. This complicates the grid sizes a lot. We will have to use three seperate grids for velocity with different sizes and another grid for the pressure. Let u, v and w denote the velocities in respectively the x, y and z direction.  In the directions that are orthogonal to the velocities of a velocity grid the size of that grid will be the size of the pressure grid plus one. We have illustrated this in figure \ref{grid sizes}. The size of the grid in the dimension that is parallel to the velocities that the grid contains is the pressure grid size plus two. The sizes in those directions are that size because of the imaginary velocities we need to store.
 
 \newpage
 
@@ -325,7 +322,7 @@ $};
   v\pdv{w}{y}&=\frac{v_{i,j-1,k}+v_{i,j-1,k+1}+v_{i,j,k}+v_{i,j,k+1}}{4}\frac{w_{i,j+1,k}-w_{i,j-1,k}}{2\Delta x}\\
 \end{split}
 \] \label{average and partial}
-We do not want to use these long equations in the code everywhere, since that would be a lot of work and unclear. Therefore, we will create a function that will calculate the partial derivative and a function that will calcute the avergage velocity at at point. To do this, we first need to create a struct that stores a velocity grid and the dimension of that grid.
+We do not want to use these long equations in the code everywhere, since that would be a lot of work and unclear. Therefore, we will create a function that will calculate the partial derivative and a function that will calcute the average velocity at at point. To do this, we first need to create a struct that stores a velocity grid and the dimension of that grid.
 
 \begin{lstlisting}[language=Rust, style=boxed, breaklines=true]
 pub struct VelocityGrid{
@@ -333,7 +330,7 @@ pub struct VelocityGrid{
     dimension: usize,
 }
 \end{lstlisting}
-As one can see, the grid is stored in a vector(Vec means vector). In Rust, a vector is an array that can have different sizes. Furthermore, the dimension of the array is stored as a usize, which basically is an integer with a maximum length that corresponds to the maximum length of an array. The values 0,1 and 2 for dimension denote the x-, y-, and z-direction respectively. To prevent the use of a lot of if-statement, we create a function that can convert the dimension number to an array for which all elements, except the element corresponding to the dimension number are zero. 
+As one can see, the grid is stored in a vector(Vec means vector). In Rust, a vector is an array that can have different sizes. Furthermore, the dimension of the array is stored as a usize, which basically is an integer with a maximum length that corresponds to the maximum length of an array. The values 0,1 and 2 for dimension denote the x-, y-, and z-direction respectively. To prevent the use of a lot of if-statements, we create a function that can convert the dimension number to an array for which all elements, except the element corresponding to the dimension number are zero. 
 \begin{lstlisting}[language=Rust, style=boxed, breaklines=true]
 //Gives you the unit vector of the dimension with the given number.
 //x - 0, y - 1, z - 2
@@ -342,12 +339,6 @@ fn get_dimension(dimension_number:usize)->[usize; 3]{
     dim[dimension_number]=1;
     return dim;
 }
-\end{lstlisting}
-
-Next, we define the sizes of the grid, the velocity grid sizes will depend on the pressure grid sizes, so we will define the pressure grid sizes:
-\begin{lstlisting}[language=Rust, style=boxed, breaklines=true]
-//Grid size(e.g. number of elements in each dimension)
-const PRESSUREGRIDSIZE: [usize; 3] = [10,10,10];//x,y,z
 \end{lstlisting}
 Now we can create a function for the second order spatial derivative.
 \begin{lstlisting}[language=Rust, style=boxed, breaklines=true]
@@ -381,8 +372,8 @@ fn convection_term(velocity_field_last_time_step: &VelocityGrid,orthogonal_veloc
 
 
 \newpage
-\subsection{Discretising the diffusion term}
-Like the convection term, the diffusion term contains no temporal terms. Of course it varies, since it terms do vary over time, but we can calculate it using information from only one timestep. We will abreviate the diffusion term of u as \(\partial _{d}u\) and the diffusion terms of v and w in a similar way\cite{MAC}. The diffusion terms of equation \ref{NSE incompressible} are\cite{MAC}:
+\subsection{Discretising the diffusion term} \label{diffusion term}
+Like the convection term, the diffusion term contains no temporal terms. Of course it varies, since it's terms do vary over time, but we can calculate it using information from only one timestep. We will abreviate the diffusion term of u as \(\partial _{d}u\) and the diffusion terms of v and w in a similar way\cite{MAC}. The diffusion terms of equation \ref{NSE incompressible} are\cite{MAC}:
 \begin{equation}
 \begin{split}
 \partial _{d}u=&\eta (\pdv[2]{u}{x}+\pdv[2]{u}{y}+\pdv[2]{u}{z})\\
@@ -409,10 +400,7 @@ So we are now able to calculate the diffusion term using:
 \begin{lstlisting}[language=Rust, style=boxed, breaklines=true]
 let diffusion=VISCOSITY*(laplacian(velocity_field, x, y, z));
 \end{lstlisting}
-We will not put this into a function already, because we do not know all the other terms yet. We will however add the constant VISCOSITY:
-\begin{lstlisting}[language=Rust, style=boxed, breaklines=true]
-const VISCOSITY: f32 = 0.001;//Viscosity in Pa*s.
-\end{lstlisting}
+We will not put this into a function already, because we do not know all the other terms yet. 
 \newpage
 \subsection{Discretising the pressure}
 \begin{figure}[ht]
@@ -425,7 +413,7 @@ const VISCOSITY: f32 = 0.001;//Viscosity in Pa*s.
 \filldraw[black] (1.5,0.5) circle (2pt);
 \node[] at (0, 1.2) {\(p_{i-1, j-1, k-1}\)};
 \node[] at (2, 1.2) {\(p_{i, j-1, k-1}\)};
-\node[] at (1, -0.5) {\(\frac{\pdv{p}{x}=p_{i, j-1, k-1}-p_{i-1, j-1, k-1}}{\Delta x}\)};
+\node[] at (1, -0.5) {\(\pdv{p}{x}=\frac{p_{i, j-1, k-1}-p_{i-1, j-1, k-1}}{\Delta x}\)};
 
 \end{tikzpicture}
 
@@ -439,6 +427,15 @@ As in figure \ref{derivative of pressure}, we can calculate the derivatives \(\p
     \pdv{p}{z}=&\frac{p_{i-1, j-1, k}-p_{i-1, j-1, k-1}}{\Delta x}
   \end{split}
 \end{equation}
+Here, (i, j, k) denotes the coordinates of the velocity in the direction we are differentiating in.  We can turn these equations into code:
+\begin{lstlisting}[language=Rust, style=boxed, breaklines=true]
+  fn first_order_central_spatial_pressure_derivative(f: [[[f32; PRESSUREGRIDSIZE[2]]; PRESSUREGRIDSIZE[1]]; PRESSUREGRIDSIZE[0]], x:usize, y:usize, z:usize, dimension_number:usize) -> f32{
+    let position_difference=get_dimension(dimension_number);
+    return (f[x+position_difference[0]][y+position_difference[1]][z+position_difference[2]]-f[x][y][z])/GRIDELEMENTSCALE;
+}
+\end{lstlisting}
+
+
 
 \subsection{Implicit and explicit methods} \label{implicit and explicit}
 Discretising the time can be done by using either an implicit or an explicit methods.\cite{enterfea} In explicit methods, all terms except for one belong to the current timestep and the remanining term that belongs to the next timestep can be calculated easily. \cite{enterfea}In implicit methods, more variables belong to the next timestep. At first, one variable is calculated in the same way as in the explicit methods and the values of the other variables are not changed. \cite{enterfea} Thereafter, the variables  are corrected iteratively so that the solution will converge. \cite{enterfea} In the case of the incompressible Navier-Stokes equation, this means the continuity equation will converge to zero. Consequently, in explicit methods the continuity equation will always converge to zero. However, in explicit methods it is just assumed that the continuity equation holds. For the continuity equation to hold the timestep size should be very low in explicit methods. \cite{enterfea} The timestep size can be higher in implicit methods, so less timesteps are needed. \cite{enterfea} However, explicit methods do not need multiple iterations per timestep. Therefore, they compute a timestep faster. \cite{enterfea}We will use an implicit method because we intend to be able to do long simulations and they are better for larger time intervals.\cite{enterfea}
@@ -449,33 +446,33 @@ Discretising the time can be done by using either an implicit or an explicit met
 Using the formulas for \(\partial _du\) and \(\partial _dc\) we can write equation \ref{NSE incompressible} as\cite{MAC}:
 \begin{equation}
 \begin{split}
-  \rho \pdv{u}{t} + \partial _cu=&-\pdv{p}{x}+\partial _du\\
-  \rho \pdv{v}{t} + \partial _cv=&-\pdv{p}{y}+\partial _dv\\
-  \rho \pdv{w}{t} + \partial _cw=&-\pdv{p}{z}+\partial _dw
+  \rho \pdv{u}{t} + \partial _cu=&-\pdv{p}{x}+\partial _du + \rho g_x\\
+  \rho \pdv{v}{t} + \partial _cv=&-\pdv{p}{y}+\partial _dv + \rho g_y\\
+  \rho \pdv{w}{t} + \partial _cw=&-\pdv{p}{z}+\partial _dw + \rho g_z
 \end{split}
 \end{equation}\label{short NSE}
-We use this notation because it is a lot shorter and, as discussed previously, we will use forward time for the derivatives. Let \(a^n\) denote a in the current timestep and \(a^{n+1}\) a in the next timestep, where a is a variable. As discussed in chapter \ref{implicit and explicit}, we will use an implicit method. We will rewrite the Navier Stokes Equations with the spatial pressure derivative of the next timestep. This will allow us to enforce convergence. \cite{MAC}
+We use this notation because it is a lot shorter. As discussed previously, we will use forward time for the derivatives. Let \(a^n\) denote a in the current timestep and \(a^{n+1}\) a in the next timestep, where a is a variable. As discussed in chapter \ref{implicit and explicit}, we will use an implicit method. We will rewrite the Navier Stokes Equations with the spatial pressure derivative of the next timestep. This will allow us to enforce convergence. \cite{MAC}
 \begin{equation}
 \begin{split}
-  \rho \frac{u^{n+1}-u^n}{\Delta t} + \partial _cu=&-\pdv{p^{n+1}}{x}+\partial _du\\
-  \rho \frac{v^{n+1}-v^n}{\Delta t} + \partial _cv=&-\pdv{p^{n+1}}{y}+\partial _dv\\
-  \rho \frac{w^{n+1}-w^n}{\Delta t} + \partial _cw=&-\pdv{p^{n+1}}{z}+\partial _dw
+  \rho \frac{u^{n+1}-u^n}{\Delta t} + \partial _cu=&-\pdv{p^{n+1}}{x}+\partial _du + \rho g_x\\
+  \rho \frac{v^{n+1}-v^n}{\Delta t} + \partial _cv=&-\pdv{p^{n+1}}{y}+\partial _dv + \rho g_y\\
+  \rho \frac{w^{n+1}-w^n}{\Delta t} + \partial _cw=&-\pdv{p^{n+1}}{z}+\partial _dw + \rho g_z
 \end{split}\label{time discretised NSE}
 \end{equation} 
 Unfortunately, we now have two variables for each formula: \(\frac{u^{n+1}-u^n}{\Delta t}\) and \(\pdv{p^{n+1}}{x}\), for x for instance. Therefore, we can not just solve this formula. We can however set the pressure term to the current pressure term and correct the error that is created in that way later. We will denote the velocities obtained in that way \(\tilde{u}\), \(\tilde{v}\) and \(\tilde{w}\)\cite{MAC}.
 \begin{equation}
 \begin{split}
-  \rho \frac{\tilde{u}-u^n}{\Delta t} + \partial _cu=&-\pdv{p^{n}}{x}+\partial _du\\
-  \rho \frac{\tilde{v}-v^n}{\Delta t} + \partial _cv=&-\pdv{p^{n}}{y}+\partial _dv\\
-  \rho \frac{\tilde{w}-w^n}{\Delta t} + \partial _cw=&-\pdv{p^{n}}{z}+\partial _dw
+  \rho \frac{\tilde{u}-u^n}{\Delta t} + \partial _cu=&-\pdv{p^{n}}{x}+\partial _du + \rho g_x\\
+  \rho \frac{\tilde{v}-v^n}{\Delta t} + \partial _cv=&-\pdv{p^{n}}{y}+\partial _dv + \rho g_y\\
+  \rho \frac{\tilde{w}-w^n}{\Delta t} + \partial _cw=&-\pdv{p^{n}}{z}+\partial _dw + \rho g_z
 \end{split}\label{guess NSE}
 \end{equation} 
 These equations contain only one unknown variable(per equation). We can rewrite them to calculate that variable. 
 \begin{equation}
   \begin{split}
-  \tilde{u}=u^{n}+\frac{\Delta t}{\rho}(-\pdv{p^{n}}{x}-\partial _cu +\partial _du)\\
-  \tilde{v}=v^{n}+\frac{\Delta t}{\rho}(-\pdv{p^{n}}{y}-\partial _cv +\partial _dv)\\
-  \tilde{w}=w^{n}+\frac{\Delta t}{\rho}(-\pdv{p^{n}}{z}-\partial _cw +\partial _dw)
+  \tilde{u}=u^{n}+\frac{\Delta t}{\rho}(-\pdv{p^{n}}{x}-\partial _cu +\partial _du + \rho g_x)\\
+  \tilde{v}=v^{n}+\frac{\Delta t}{\rho}(-\pdv{p^{n}}{y}-\partial _cv +\partial _dv + \rho g_y)\\
+  \tilde{w}=w^{n}+\frac{\Delta t}{\rho}(-\pdv{p^{n}}{z}-\partial _cw +\partial _dw + \rho g_z)
   \end{split}\label{velocity tilde}
 \end{equation} 
 Now we substract equation \ref{time discretised NSE} from \ref{guess NSE}.
@@ -513,13 +510,13 @@ However, we still need to know the pressure to solve this equation. The velocity
   \pdv{u}{x}+\pdv{v}{y}+\pdv{w}{z}=0
 \]
 We can discretise this equation for the timestep n+1 to obtain a formula for which the sole unknowns are the pressures. The pressure term has the coordinates (i,j,k)
-\[
+\begin{equation}
   \begin{split}
     \frac{u^{n+1}_{i+1,j+1,k+1}-u^{n+1}_{i, j+1, k+1}}{\Delta x} + 
     \frac{v^{n+1}_{i+1,j+1,k+1}-v^{n+1}_{i+1, j, k+1}}{\Delta x} + 
     \frac{w^{n+1}_{i+1,j+1,k+1}-w^{n+1}_{i+1, j+1, k}}{\Delta x}\\=0 
-  \end{split}
-\]
+  \end{split} \label{continuity discretised}
+\end{equation}
 We can multiply by \(\Delta x\) on both sides.
 \[
   \begin{split}
@@ -574,18 +571,73 @@ We assume that the pressure corrections for p other than (i,j,k) is zero. This w
   \end{split}
 \]
 The above equation usually reaches convergence too slow, it should therefore be multiplied by a constant, \(\omega _0\).
-\[
+\begin{equation}
 \begin{split}
   p'_{i,j,k}&=-\omega _0\frac{\rho \Delta x}{6\Delta t}(\tilde{u}_{i+1,j+1,k+1}
   \\ &-\tilde{u}_{i, j+1, k+1}
   +\tilde{v}_{i+1,j+1,k+1}-\tilde{v}_{i+1, j, k+1}
   \\ &+\tilde{w}_{i+1,j+1,k+1}
   -\tilde{w}_{i+1, j+1, k})
+\end{split} \label{pressure correction formula}
+\end{equation}
+Even though we multiply by \(\omega _0\), convergence is often not yet reached after one pressure correction. We therefore need to apply the pressure correction formula until convergence is reached.\cite{MAC}. 
+
+\subsection{The algorithm}
+As we have just discussed we have to apply the pressure correction formula several times, the complete algoritm is: \cite{MAC}
+\paragraph{1) Initialize \(u^n\), \(v^n\), \(w^n\) and \(p^n\)} The pressure will depend on the x-coordinate due to gravity, we will write a formula to determine the initial pressure.
+\paragraph{2) Predict \(\tilde{u}\), \(\tilde{v}\) and \(\tilde{w}\)} Store the results of equation \ref{velocity tilde} in new arrays, we still want to keep the last timestep velocities. 
+\paragraph{3) Update boundary conditions} Implement the boundary conditions discussed in \ref{Boundary conditions and walls}.
+\paragraph{4) Calculate pressure correction(p')} Store the pressure correction obtained from equation \ref{pressure correction formula} in a new array.
+\paragraph{5) Update velocities to the velocities of the next timestep} Use equation \ref{next timestep velocities} to calculate the next timestep velocities. The results can be stored in the grids from step 2, because the those results are not needed anymore.
+\paragraph{6) Update boundary conditions again} The boundary conditions from \ref{Boundary conditions and walls} need to be applied on the new velocity grids.
+\paragraph{7) Check convergence} Check whether the continuity equatio(the upper equation of \ref{NSE incompressible}) is satisfied. If it is satisfied enough, set the velocity grids created in step 1 to the velocity grids of step 5. Also, add the pressure correction grid to the pressure grid. It is now possible to go to the next timestep. If it has not converged, only add the pressure correction grid to the pressure grid and go back to step 2. The continuity equation should converge to zero after doing steps 2 till 7 multiple times. 
+
+
+\subsection{The code}
+\subsubsection{Programming the algorithm}
+\paragraph{1) Initialize \(u^n\), \(v^n\), \(w^n\) and \(p^n\)}
+\(u^n\), \(v^n\) and \(w^n\) can be set to zero or an arbitraty value. It is important that the initial condition is realistic. If it is not the program will yield weird results or it will not even converge and yield nothing at all.
+\\ \\
+As we have explained in \ref{The sizes of the grids} the dimensions of a velocity grid are the pressure grid size plus two in the directions orthogonal to the direction of the velocities of that grid and the pressure grid size plus one in the parallel direction. The sizes of the pressure grid will of course be PRESSUREGRIDSIZES, a constant we defined in section \ref{Constants}. We will set the initial velocities to zero. So, in code:
+\begin{lstlisting}[language=Rust, style=boxed, breaklines=true]
+let mut pressure_grid: [[[f32; PRESSUREGRIDSIZE[2]]; PRESSUREGRIDSIZE[1]]; PRESSUREGRIDSIZE[0]]=[[[0.0; PRESSUREGRIDSIZE[2]]; PRESSUREGRIDSIZE[1]]; PRESSUREGRIDSIZE[0]];//pressureGrid[x][y][z] is the pressure at coordinates (x,y,z)
+    let mut velocity_x = VelocityGrid{grid: vec![vec![vec![0.0;PRESSUREGRIDSIZE[2]+2]; PRESSUREGRIDSIZE[1]+2]; PRESSUREGRIDSIZE[0]+1], dimension:0};// z,y,x !!!
+    let mut velocity_y = VelocityGrid{grid: vec![vec![vec![0.0;PRESSUREGRIDSIZE[2]+2]; PRESSUREGRIDSIZE[1]+1]; PRESSUREGRIDSIZE[0]+2], dimension:1}; 
+    let mut velocity_z = VelocityGrid{grid: vec![vec![vec![0.0;PRESSUREGRIDSIZE[2]+1]; PRESSUREGRIDSIZE[1]+2]; PRESSUREGRIDSIZE[0]+2], dimension:2}; 
+    
+\end{lstlisting}
+Here the pressure is set to zero, which it should not be, since there is no vacuum. To determine the initial pressure we need to take gravity in account. The mass of fluid layers above a certain layer will exercise pressure on that layer. The pressure can be determined using the following formula:
+\[
+\begin{split}
+p(h)&=\frac{F}{A}=\frac{F_{atmospheric}+F_{g,water}}{A}
+\\&=\frac{F_{atmospheric}}{A}+\frac{\rho V_{water}g}{A}
+\\&=p_{atmospheric}+\rho hg
 \end{split}
 \]
-Even though we multiply by \(\omega _0\), convergence is often not yet reached after one pressure correction. We therefore need to apply the pressure correction formula until convergence is reached.\cite{MAC}.
+Where h is the height. z=0 is the bottom, so:
+\[
+\begin{split}
+  h&=z_{max}-z\\
+  &=>p(z)=p_{atmospheric}+\rho g(z_{max}-z)
+\end{split}
+\]
+We can use this function to create the desired pressure function:
+\begin{lstlisting}[language=Rust, style=boxed, breaklines=true]
+fn initialize_pressure_grid(pressure_grid: &mut [[[f32; PRESSUREGRIDSIZE[2]];PRESSUREGRIDSIZE[1]];PRESSUREGRIDSIZE[0]]){
+    for x in 0..(PRESSUREGRIDSIZE[0]-1){//velocty_grid has PRESSUREGRIDSIZE[dimension] elements, so loop from 0 to PRESSUREGRIDSIZE[dimension]-1.
+        for y in 0..(PRESSUREGRIDSIZE[1]-1){
+            for z in 0..(PRESSUREGRIDSIZE[2]-1){
+                //The pressure should be the atmosferic pressure(101,325Pa) plus the pressure that is exercised by the water above a point on the water at that point. 
+                pressure_grid[x][y][z]=ATMOSPHERIC_PRESSURE+DENSITY*(PRESSUREGRIDSIZE[2] as f32 - z as f32)*GRIDELEMENTSCALE*EXTERNALFORCE[2];
+            }
+        }
+    }
+}
+\end{lstlisting}
 
-Like we did with formulas in other chapters, we will convert the formulas from this chapter into code. We will not rewrite the formulas every time we use them, so we will create functions for them. We start with formula \ref{velocity tilde}:
+
+
+\paragraph{2) Predict \(\tilde{u}\), \(\tilde{v}\) and \(\tilde{w}\)}  We start with formula \ref{velocity tilde}:
 
 \begin{lstlisting}[language=Rust, style=boxed, breaklines=true]
 fn predict_velocity(provisonal_velocity_field: &mut VelocityGrid, velocity_field_last_time_step: &VelocityGrid, orthogonal_velocity_field_a: &VelocityGrid, orthogonal_velocity_field_b: &VelocityGrid, pressure_grid: [[[f32; PRESSUREGRIDSIZE[2]]; PRESSUREGRIDSIZE[1]]; PRESSUREGRIDSIZE[0]]){
@@ -593,21 +645,189 @@ fn predict_velocity(provisonal_velocity_field: &mut VelocityGrid, velocity_field
     for x in 1..(PRESSUREGRIDSIZE[0]-dim[0]+1) {
         for y in 1..(PRESSUREGRIDSIZE[1]-dim[1]+1) {
             for z in 1..(PRESSUREGRIDSIZE[2]-dim[2]+1) {
-                //convection term
-                let convection=DENSITY*(velocity_field_last_time_step.grid[x][y][z]*second_order_spatial_derivative(&velocity_field_last_time_step, x, y, z, velocity_field_last_time_step.dimension)
-                +get_velocity_from_orthogonal_grid(&orthogonal_velocity_field_a, x, y, z, velocity_field_last_time_step.dimension)*second_order_second_spatial_derivative(velocity_field_last_time_step, x, y, z, orthogonal_velocity_field_a.dimension)
-                +get_velocity_from_orthogonal_grid(&orthogonal_velocity_field_b, x, y, z, velocity_field_last_time_step.dimension)*second_order_second_spatial_derivative(velocity_field_last_time_step, x, y, z, orthogonal_velocity_field_b.dimension));
                 //Diffusion term
                 let diffusion=VISCOSITY*(laplacian(velocity_field_last_time_step, x, y, z));
                 //And finally, the provisional velocity
-                provisonal_velocity_field.grid[x][y][z]=velocity_field_last_time_step.grid[x][y][z]+TIMESTEPSIZE/DENSITY*(-convection+first_order_central_spatial_pressure_derivative(pressure_grid, x-1, y-1, z-1, velocity_field_last_time_step.dimension)+diffusion+EXTERNALFORCE[velocity_field_last_time_step.dimension]);
+                provisonal_velocity_field.grid[x][y][z]=velocity_field_last_time_step.grid[x][y][z]+TIMESTEPSIZE/DENSITY*(-convection_term(velocity_field_last_time_step, orthogonal_velocity_field_a, orthogonal_velocity_field_b, x, y, z)-first_order_central_spatial_pressure_derivative(pressure_grid, x-1, y-1, z-1, velocity_field_last_time_step.dimension)+diffusion+DENSITY*EXTERNALFORCE[velocity_field_last_time_step.dimension]);
             }
         }
     }
 
 }
 \end{lstlisting}
-The function above will create a provisional velocity grid from the last timestep grid. The convection terms is calculated as in section \
+The function above stores the provisional velocities obtained from equation \ref{velocity tilde} in provisional\_velocity\_field, which is a seperate grid. The diffusion term is calculated as in chapter \ref{diffusion term}.
+
+\paragraph{3) Update boundary conditions}
+Ideally, the user can set the boundary conditions themselves. Although this is currently possible, it requires the user to program themselves quite a lot. We will create a few functions the user can use to set the boundary conditions. 
+\\ \\
+We will enforce a no-slip boundary condition at the wall as we have discussed in section \ref{Boundary conditions and walls}. We will first create a function that will enforce that boundary condition in the orthogonal direction. 
+\begin{lstlisting}[language=Rust, style=boxed, breaklines=true]
+/Set the orthogonal velocity to a certain value on a wall
+fn set_orthogonal_boundary_condition_at_wall(orthogonal_velocity_grid: &mut VelocityGrid, min_coords: [usize; 3], max_coords: [usize; 3], value: f32){
+    for x in min_coords[0]..=max_coords[0]{
+        for y in min_coords[1]..=max_coords[1]{
+            for z in min_coords[2]..=max_coords[2]{
+                orthogonal_velocity_grid.grid[x][y][z]=value;
+            }
+        }
+    }
+}
+\end{lstlisting}
+
+This function will set the orthogonal boundary condition for a rectangular wall with given minimum and maximum coords. As one can see, we have use ..= instead of .. in the for loops. We have done this because we also want to set the boundary condition at the maximum coordinates(max\_coords). This way, the boundary condition will also be set when one component of the minimum coordinates is equal to the same  component of the maximum coordinates. The user can choose the variable value, so that he or she can create inflows and outflows by setting it to a nonzero value. When value is zero there is no flow.
+\\ \\
+We also have to enforce the boundary values in the directions parallel to the wall, again using the formulas from section \ref{Boundary conditions and walls}. This is a little bit trickier, because we have to use neighboring points. The user will have to specify whether the given points are on the side of the wall with lower coordinates or higher coordinates.
+\begin{lstlisting}[language=Rust, style=boxed, breaklines=true]
+//wall_is_on_lower_side=0 means the wall is on the side with lower coordinates seen from the dry side and wall_is_on_lower_side=1 means the wall is on the side with higher coordinates. 
+//orthogonal_dimension is the dimension number(0 for x, 1 for y, 2 for z) of the dimension orthogonal to the wall
+fn set_parallel_boundary_condition_at_wall(parallel_velocity_grid: &mut VelocityGrid, min_coords: [usize; 3], max_coords: [usize; 3], wall_is_on_lower_side: bool, orthogonal_dimension: usize){
+    let dim=get_dimension(orthogonal_dimension);
+    let transformation_in_one_dimension=1 - 2 * (wall_is_on_lower_side as isize);// -1 when a lower element is needed, +1 when a higher element is needed
+    let transformation_to_neighbor:[isize; 3]=[(dim[0] as isize) * transformation_in_one_dimension, (dim[1] as isize) * transformation_in_one_dimension, (dim[2] as isize) * transformation_in_one_dimension];// This is the transformation to the neighbor opposite of the wall
+    for x in min_coords[0]..=max_coords[0]{
+        for y in min_coords[1]..=max_coords[1]{
+            for z in min_coords[2]..=max_coords[2]{
+                //The parallel velocity should be the opposite of the parallel velocity on the other side of the wall, so that the average is zero.
+                parallel_velocity_grid.grid[x][y][z]=-parallel_velocity_grid.grid[(x as isize + transformation_to_neighbor[0])as usize][(y as isize + transformation_to_neighbor[1]) as usize][(z as isize+transformation_to_neighbor[2]) as usize];          
+            }
+        }
+    }
+}
+\end{lstlisting}
+To make using the program a little bit easier, we have created a function that sets the boundary conditions for two walls, it is explained in the comments.
+\begin{lstlisting}[language=Rust, style=boxed, breaklines=true]
+fn set_boundary_conditions_of_two_parallel_walls(orthogonal_velocity_grid: &mut VelocityGrid, parallel_velocity_grid_a: &mut VelocityGrid, parallel_velocity_grid_b: &mut VelocityGrid, orthogonal_velocity_grid_value: f32){
+    let dim= get_dimension(orthogonal_velocity_grid.dimension);
+    //Set the max positions, the position coordinate orthogonal to the wall will be set to zero later
+    let mut max_orthogonal_coords=[PRESSUREGRIDSIZE[0]+1, PRESSUREGRIDSIZE[1]+1, PRESSUREGRIDSIZE[2]+1];//max coordinates for orthogonal velocities  
+    let mut max_parallel_coords=PRESSUREGRIDSIZE;//Max coordinates for parallel velocities
+    //The coordinates of one wall have coordinate zero in one dimension
+    max_orthogonal_coords[orthogonal_velocity_grid.dimension]=0;//Take the wall that has the 0 coordinate in one direction
+    max_parallel_coords[orthogonal_velocity_grid.dimension]=0;// The sizes of the parallel grids are the same in the other dimensions, so we will loop through the same values.
+    //Set boundary conditions for the zero wall
+    set_orthogonal_boundary_condition_at_wall(orthogonal_velocity_grid, [0,0,0], max_orthogonal_coords, orthogonal_velocity_grid_value);
+    set_parallel_boundary_condition_at_wall(parallel_velocity_grid_a, [0,0,0], max_parallel_coords, false, orthogonal_velocity_grid.dimension);
+    set_parallel_boundary_condition_at_wall(parallel_velocity_grid_b, [0,0,0], max_parallel_coords, false, orthogonal_velocity_grid.dimension);
+    //The other wall has one coordinate at the maximum, so set that coordinate to the maximum
+    max_orthogonal_coords[orthogonal_velocity_grid.dimension]=PRESSUREGRIDSIZE[orthogonal_velocity_grid.dimension];
+    max_parallel_coords[orthogonal_velocity_grid.dimension]=PRESSUREGRIDSIZE[orthogonal_velocity_grid.dimension]+1;
+    let minimum_parallel_coords=[(PRESSUREGRIDSIZE[0]+1)*dim[0], (PRESSUREGRIDSIZE[1]+1)*dim[1], (PRESSUREGRIDSIZE[2]+1)*dim[2]];
+    let minimum_orthogonal_coords=[PRESSUREGRIDSIZE[0]*dim[0],PRESSUREGRIDSIZE[1]*dim[1], PRESSUREGRIDSIZE[2]*dim[2]];
+    //Set boundary conditions for the maximum wall
+    set_orthogonal_boundary_condition_at_wall(orthogonal_velocity_grid, minimum_orthogonal_coords, max_orthogonal_coords, orthogonal_velocity_grid_value);
+    set_parallel_boundary_condition_at_wall(parallel_velocity_grid_a, minimum_parallel_coords, max_parallel_coords, true, orthogonal_velocity_grid.dimension);
+    set_parallel_boundary_condition_at_wall(parallel_velocity_grid_b, minimum_parallel_coords, max_parallel_coords, true, orthogonal_velocity_grid.dimension);
+    
+
+}
+\end{lstlisting}
+We would like to implement more options for modifying boundary conditions in the future, for now it is beyond the scope of our project.
+
+\paragraph{4) Calculate pressure correction(p')}
+
+Next, we turn equation \ref{pressure correction formula} into code. 
+\begin{lstlisting}[language=Rust, style=boxed, breaklines=true]
+fn calculate_pressure_correction(x_velocity: & VelocityGrid, y_velocity: & VelocityGrid, z_velocity: & VelocityGrid)->[[[f32; PRESSUREGRIDSIZE[2]]; PRESSUREGRIDSIZE[1]]; PRESSUREGRIDSIZE[0]]{
+    let mut pressure_correction: [[[f32; PRESSUREGRIDSIZE[2]]; PRESSUREGRIDSIZE[1]]; PRESSUREGRIDSIZE[0]]=[[[0.0; PRESSUREGRIDSIZE[2]]; PRESSUREGRIDSIZE[1]]; PRESSUREGRIDSIZE[0]];//Here we will store the pressure corrections.
+    let constant_term_pressure_equation=RELEXATION*DENSITY*GRIDELEMENTSCALE/(6.0*TIMESTEPSIZE);//The lower part of the equation is this constant.
+        for i in 0..PRESSUREGRIDSIZE[0] - 1{
+            for j in 0..PRESSUREGRIDSIZE[1] - 1{
+                for k in 0..PRESSUREGRIDSIZE[2] - 1{
+                    pressure_correction[i][j][k]=-constant_term_pressure_equation*(x_velocity.grid[i+1][j+1][k+1] - x_velocity.grid[i][j+1][k+1]+ y_velocity.grid[i+1][j+1][k+1] - y_velocity.grid[i+1][j][k+1] + z_velocity.grid[i+1][j+1][k+1]-z_velocity.grid[i+1][j+1][k]);
+                }
+            }
+        }
+    return pressure_correction;
+}
+\end{lstlisting}
+
+\paragraph{5) Update velocities to the velocities of the next timestep} 
+We also write a function for equation \ref{next timestep velocities}. We do not need the provisional velocities anymore, so we will store the new velocities in the provisional velocity array for storage efficiency.
+
+\begin{lstlisting}[language=Rust, style=boxed, breaklines=true]
+fn update_velocity_field(velocity_field: &mut VelocityGrid, pressure_correction : &[[[f32; PRESSUREGRIDSIZE[2]]; PRESSUREGRIDSIZE[1]]; PRESSUREGRIDSIZE[0]]){
+    let dim=get_dimension(velocity_field.dimension);
+    let constant_term_velocity_equation=TIMESTEPSIZE/(DENSITY*GRIDELEMENTSCALE);
+    for i in 1..PRESSUREGRIDSIZE[0]+1-dim[0]{
+        for j in 1..PRESSUREGRIDSIZE[1]+1-dim[1]{
+            for k in 1..PRESSUREGRIDSIZE[2]+1-dim[2]{
+                velocity_field.grid[i][j][k]=velocity_field.grid[i][j][k]-constant_term_velocity_equation*(pressure_correction[i+dim[0]-1][j+dim[1]-1][k+dim[2]-1]- pressure_correction[i-1][j-1][k-1]);
+            }
+        }
+    }
+}
+\end{lstlisting}
+\paragraph{6) Update boundary conditions again}
+This is the same as step 3, it is important that the same boundary conditions are enforced
+\paragraph{7) Check convergence}
+The velocities should satisfy the continuity equation(the upper equation of \ref{NSE incompressible}). As we have seen the discretised version of the continuity equation is \ref{continuity discretised}. Because we have discretised the equations, the continuity equation will not be completely satisfied. However, after each pressure correction the continuity equation should converge to zero a little more. We will stop correcting the pressure when the error is smaller than the constant ALLOWEDERROR. Calculating the error is very easy, since it is just the sum of the derivatives of the velocities in their own direction. We will calulate the derivatives for a pressure point and use central derivatives, so that all three derivatives are calculable. So we first need to define that derivative:
+
+\begin{lstlisting}[language=Rust, style=boxed, breaklines=true]
+fn first_order_central_spatial_derivative(f: &VelocityGrid, x: usize, y: usize, z:usize)->f32{//practically identical to first_order_forward_spatial_derivative, but for clarity we keep it.
+    let dim=get_dimension(f.dimension);
+    return (f.grid[x+dim[0]][y+dim[1]][z+dim[2]]-f.grid[x][y][z])/GRIDELEMENTSCALE;
+}
+\end{lstlisting}
+Now we can create a function that determines whether the error is too big somewhere:
+\begin{lstlisting}[language=Rust, style=boxed, breaklines=true]
+fn check_convergence(provisional_velocity_x:&VelocityGrid, provisional_velocity_y: &VelocityGrid, provisional_velocity_z: &VelocityGrid)->bool{
+    
+    for x in 0..PRESSUREGRIDSIZE[0]{
+        for y in 0..PRESSUREGRIDSIZE[1]{
+            for z in 0..PRESSUREGRIDSIZE[2]{
+                let error=first_order_central_spatial_derivative(&provisional_velocity_x, x, y, z)
+                    +first_order_central_spatial_derivative(&provisional_velocity_y, x, y, z)
+                    +first_order_central_spatial_derivative(&provisional_velocity_z, x, y, z);    
+                if error.abs()>ALLOWEDERROR{
+                    println!("Convergence not yet reached, error is {} at ({}, {}, {})", error, x, y, z );
+                    return false;
+
+                }
+            }
+        }
+    } 
+    return true;
+}
+\end{lstlisting}
+
+\subsubsection{Switching grids}
+We want to display the velocities on a collocated grid and not on a staggered grid, therefore we will create a function that calculates the velocities at pressure points:
+
+\begin{lstlisting}[language=Rust, style=boxed, breaklines=true]
+fn get_velocity_at_pressure_point(velocity_grid: &VelocityGrid, x: usize, y: usize, z: usize)->f32{
+    let dim= get_dimension(velocity_grid.dimension);
+    return velocity_grid.grid[x+1][y+1][x+1]-velocity_grid.grid[x+1-dim[0]][y+1-dim[1]][z+1-dim[2]];//Just take the average
+}
+\end{lstlisting}
+This function just takes the average of the two nearest velocity points. Using this function we can get all velocity components at every pressure point. However, if we will visualise all velocity components of a large grid we will show so much data that one can not interpret it well. Therefore, we want to be able to scale down the resolution. We will do that using the following function:
+\begin{lstlisting}[language=Rust, style=boxed, breaklines=true]
+//Calculates the interval between the velocities that should be shown in one dimension
+fn calc_step_size(from_dimension: usize, to_dimension: usize)->usize{
+    return from_dimension/to_dimension;
+} 
+\end{lstlisting}
+The function divides a usize by a usize. A usize is an integer and thus Rust wants the answer to be an integer as well. Rust will therefore round it down when it is not an integer. We want this to happen because the array elements are all integers. Furthermore, when the answer is rounded down there will be no out-of-bounds errors. 
+\\ \\
+We can use these functions to convert the velocities to a collocated grid and visualise them:
+\begin{lstlisting}[language=Rust, style=boxed, breaklines=true]
+//min_coords and max_coords are the pressure coordinates of which we want to know the velocities(this function will determine those velocities by taking the average of nearby velocities)
+//data_grid_point_size is the size of the grid we want to show to the user
+pub fn convert_velocities_to_collocated_grid_and_visualise(min_coords: [usize; 3], max_coords: [usize;3], data_grid_point_size: [usize; 3], velocity_grid_x: &VelocityGrid, velocity_grid_y: &VelocityGrid, velocity_grid_z: &VelocityGrid) -> Vec<Vec<Vec<[f32;3]>>>{
+    let step_size=[calc_step_size(max_coords[0]-min_coords[0], data_grid_point_size[0]), calc_step_size(max_coords[1]-min_coords[1], data_grid_point_size[1]), calc_step_size(max_coords[2]-min_coords[2], data_grid_point_size[2])];
+    let mut return_data: Vec<Vec<Vec<[f32; 3]>>>=vec![vec![vec![[0.0; 3]; data_grid_point_size[0]]; data_grid_point_size[1]]; data_grid_point_size[0]];
+    for x in 0..data_grid_point_size[0]{
+        for y in 0..data_grid_point_size[1]{
+            for z in 0..data_grid_point_size[2]{
+                return_data[x][y][z]=[get_velocity_at_pressure_point(&velocity_grid_x, x*step_size[0], y*step_size[1], z*step_size[2]),  get_velocity_at_pressure_point(&velocity_grid_y, x*step_size[0], y*step_size[1], z*step_size[2]), get_velocity_at_pressure_point(&velocity_grid_z, x*step_size[0], y*step_size[1], z*step_size[2])];
+            }
+        }
+    }
+    return return_data;
+}
+\end{lstlisting}
+
+\subsubsection{Putting it all together}
+Using the functions from previous chapters, we can finally create a function for one timestep
 
 
 
@@ -639,8 +859,10 @@ xd-zy+x & yd -zx - y & 2xy + zd & -x^2 + y^2 + d
 \end{bmatrix}$
 where $d = ||\vec{x}-\vec{v}||$.\cite{Quaternion rotation}
 \subsection{Data capturing}
-In order to actually show the data, we need to draw the arrows by defining the vertices that make up the arrows. We then multiply it with the transformation matrix from the previous chapter and finally with a standard camera matrix: 
+In order to actually show the data, we need to draw the arrows by defining the vertices that make up the arrows. We then multiply it with the transformation matrix from the previous chapter and finally with a standard camera matrix. \cite{mvp} Then to get the final image we create a lot of instances of that arrow that are rotated and translated with the transformation matrix of the previous chapter. \label{Drawing} We finally define a grid by drawing lines with a start and endpoint multiplied with the camera matrix giving us something like this:
+%TODO: add image
 
+\newpage
 \section{Conclusion}
 
 
@@ -715,5 +937,7 @@ https://vulkan-tutorial.com/
 \url{http://thevisualroom.com/marker_and_cell_method.html}
 \bibitem{Quaternion rotation}
 \url{https://stackoverflow.com/questions/1171849/finding-quaternion-representing-the-rotation-from-one-vector-to-another}
+\bibitem{mvp}
+\url{https://www.youtube.com/watch?v=x_Ph2cuEWrE}
 \end{thebibliography}
 \end{document}
