@@ -12,7 +12,7 @@ const ATMOSPHERIC_PRESSURE: f32=0.0;//101.325;//Atmospheric pressure in Pa
 
 const MAXITERATIONSPERTIMEFRAME:i32=2000;//This constant sets a maximum so the computer can not get in an infinite loop.
 const RELEXATION: f32=1.0;//Pressure correction is often underestimated, this factor should be between 1.4 and 1.8.
-const ALLOWEDERROR: f32=0.00005; 
+const ALLOWEDERROR: f32=0.0005; 
 
 //Pressure is measured in Pascal, because it is the standard SI unit for pressure.
 
