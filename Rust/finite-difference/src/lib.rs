@@ -12,7 +12,7 @@ const ATMOSPHERIC_PRESSURE: f32=0.0;//101.325;//Atmospheric pressure in Pa
 
 const MAXITERATIONSPERTIMEFRAME:i32=2000;//This constant sets a maximum so the computer can not get in an infinite loop.
 const RELEXATION: f32=1.0;//Pressure correction is often underestimated, this factor should be between 1.4 and 1.8.
-const ALLOWEDERROR: f32=0.0005; 
+const ALLOWEDERROR: f32=0.05; 
 
 //Pressure is measured in Pascal, because it is the standard SI unit for pressure.
 
@@ -51,7 +51,7 @@ fn initialize_pressure_grid(pressure_grid: &mut [[[f32; PRESSUREGRIDSIZE[2]];PRE
         for y in 0..(PRESSUREGRIDSIZE[1]-1){
             for z in 0..(PRESSUREGRIDSIZE[2]-1){
                 //The pressure should be the atmosferic pressure(101,325Pa) plus the pressure that is exercised by the water above a point on the water at that point. 
-                pressure_grid[x][y][z]=ATMOSPHERIC_PRESSURE+DENSITY*(PRESSUREGRIDSIZE[2] as f32 - z as f32)*GRIDELEMENTSCALE*EXTERNALFORCE[2];
+                pressure_grid[x][y][z]=ATMOSPHERIC_PRESSURE-DENSITY*(PRESSUREGRIDSIZE[2] as f32 - z as f32)*GRIDELEMENTSCALE*EXTERNALFORCE[2];
             }
         }
     }
@@ -94,7 +94,8 @@ fn simulation_time_step(velocity_grid_x: &mut VelocityGrid, velocity_grid_y: &mu
             velocity_grid_z.grid=provisional_velocity_z.grid.clone();
             *i=MAXITERATIONSPERTIMEFRAME;
         }else{
-            println!{"convergence has not yet been reached, trying again, iteration: {}", i};
+            //println!{"convergence has not yet been reached, trying again, iteration: {}, timestep {}", i, time_step};
+            //println!{"Pressure {} correction {} at (8,8,1)", pressure_grid[8][8][1], pressure_correction[8][8][1]};
             if *i+1==MAXITERATIONSPERTIMEFRAME{//If the continuity equation has not converged after many iterations something probably went wrong. Therefore the program will have to be terminated then.
                 println!("Last iteration {} did not converge", i);
                 std::process::exit(1);
@@ -102,11 +103,12 @@ fn simulation_time_step(velocity_grid_x: &mut VelocityGrid, velocity_grid_y: &mu
             
         }
         *i=*i+1;
-        println!("i is {}", i);
+        //println!("i is {}", i);
         //7) Update pressure
         update_pressure(pressure_grid, &pressure_correction);
     }  
     println!("Finished! At (2,2,2) velocity is ({}, {}, {})",velocity_grid_x.grid[2][2][2], velocity_grid_y.grid[2][2][2],velocity_grid_z.grid[2][2][2]);
+    println!("Pressure at (8,8,1) is {} on timestep {}", pressure_grid[8][8][1], time_step);
     return convert_velocities_to_collocated_grid_and_visualise([1,1,1], [PRESSUREGRIDSIZE[0]-1, PRESSUREGRIDSIZE[1]-1, PRESSUREGRIDSIZE[2]-1], [4,4,4], velocity_grid_x, velocity_grid_y, velocity_grid_z);
 }
 
@@ -196,7 +198,7 @@ fn check_convergence(provisional_velocity_x:&VelocityGrid, provisional_velocity_
                     +first_order_central_spatial_derivative_at_pressure_coordinates(&provisional_velocity_y, x, y, z)
                     +first_order_central_spatial_derivative_at_pressure_coordinates(&provisional_velocity_z, x, y, z);    
                 if error.abs()>ALLOWEDERROR{
-                    println!("Convergence not yet reached, error is {} at ({}, {}, {})", error, x, y, z );
+                    //println!("Convergence not yet reached, error is {} at ({}, {}, {})", error, x, y, z );
                     return false;
 
                 }
@@ -315,7 +317,7 @@ fn second_order_spatial_derivative(f:&VelocityGrid, x: usize, y:usize, z:usize, 
 
 fn second_order_second_spatial_derivative(f: &VelocityGrid, x:usize, y:usize, z:usize, dimension_number:usize) -> f32{
     let dim = get_dimension(dimension_number);
-    return(f.grid[x+dim[0]][y+dim[1]][z+dim[2]]-2.0*f.grid[x][y][z]+f.grid[x-dim[0]][y-dim[1]][z-dim[2]])/(GRIDELEMENTSCALE*GRIDELEMENTSCALE);
+    return (f.grid[x+dim[0]][y+dim[1]][z+dim[2]]-2.0*f.grid[x][y][z]+f.grid[x-dim[0]][y-dim[1]][z-dim[2]])/(GRIDELEMENTSCALE*GRIDELEMENTSCALE);
 }
 
 //Laplacian velocity grid
