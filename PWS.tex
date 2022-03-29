@@ -25,7 +25,7 @@
 \usepackage{graphicx}
 \graphicspath{ {./images/} }
 
-\title{PWS/Meesterproef vloeistofdynamica}
+\title{PWS vloeistofdynamica}
 \author{Wiebe Derksen and Daniël Visser}
 
 
@@ -39,14 +39,24 @@
 \newpage
 %Start van het PWS zelf
 \section{Introduction}
-People have been simulating  for decades using computers, for aeronautics, movies, games and more. We thought this would be an interesting subject to write our PWS about because it is a quite difficult subject, but at the same time we both have a great interest in both physics and mathematics. We thought it would be easily doable but as time progressed , we started to realize this project would take quite a bit more time than we had expected. Nevertheless, it was a really interesting project of which we learned a lot. 
+People have been simulating fluids for decades using computers, for aeronautics, movies, games and more. We thought this would be an interesting subject to write our profielwerkstuk (PWS) about because it is a quite difficult subject, but at the same time we both have a great interest in both physics and mathematics. We thought it would be easily doable but as time progressed, we started to realize this project would take quite a bit more time than we had expected. Nevertheless, it was a really interesting project. This was also the reason we decided to choose computational fluid dynamics (CFD) as the subject of our PWS.
+\\ \\
+Before people used computers for fluid simulations, they had to use analytical formulas. Unfortunately, the equations that describe the motion of fluids (the Navier-Stokes Equations) do not have a known analytical solution. Finding an analytical solution to the Navier-Stokes Equations is one of the Milennium Problems\cite{Millenium Problems}, the person who finds an analytical solution to the Navier-Stokes Equations will therefore get a million dollars. Although the Navier-Stokes Equations have no known analytical solution, they can be approximated numerically. Therefore, we will use a numerical approach.
+\\ \\
+In chapter \ref{What algorithms are feasible to implement?} \textit{What algorithms are feasible to implement?} we will discuss some common algorithms for solving the Navier-Stokes Equations and decide which algorithm we will implement, futhermore we will do some neglections to simplify the Navier-Stokes Equations and discuss boundary conditions. 
+\\ \\
+In chapter \ref{The implementation of the finite difference method} \textit{The implementation of the finite difference method} we will implement the finite difference method and explain our code.
+\\ \\
+In chapter \ref{Visualisation} \textit{Visualisation} we will explain how to render the results using Vulkan.
+\\ \\
+In chapter \ref{Conclusion} \textit{Conclusion} we will discuss our program and the results.
+
 
 \newpage
-\section{What algorithms are feasible to implement?}
+\section{What algorithms are feasible to implement?}\label{What algorithms are feasible to implement?}
 \subsection{Introduction to differential equations}
-There are many algorithms to execute fluid simulations, each has its own advantages and disadvantages. In this chapter we will discuss these algorithms and their pro's and cons. 
+There are many algorithms to simulate liquids, each has its own advantages and disadvantages. In this chapter we will discuss these algorithms and their pro's and cons. 
 \\
-
 A differential equation can be solved either numerically or analytically. An analytical solution is a solution for the entire domain of the function. A numerical solution only gives an approximation for some discrete values.  Many differential equations are not analytically solvable, they have to be solved numerically. A numerical solution is often obtained using computers. \cite{What is discretization}
 
 
@@ -54,10 +64,9 @@ A differential equation can be solved either numerically or analytically. An ana
 
 %Algorithms
 \subsection{The algorithms}
-In this section we will discuss some of the most used algorithms for solving the Navier-Stokes Equations, their advantages and disadvantages. 
 %FDM
-\subsubsection{Finite Difference Method(FDM)}
-The Finite Difference Method(FDM) approximates the derivatives of a function using a truncated Taylor series. For a Taylor series around a point x=a the following formula applies. :\cite{Taylor series}:
+\subsubsection{Finite Difference Method (FDM)}
+The Finite Difference Method (FDM) approximates the derivatives of a function using a truncated Taylor series. For a Taylor series around a point x=a the following formula applies. :\cite{Taylor series}:
 \[f(x)=\sum_{i=0}^{\infty}\frac{f^{(i)}}{i!}(x-a)^{i}\]
 A computer cannot keep computing forever. Therefore we have to use a truncated Taylor series. The truncated Taylor series unto i=3 is given by \cite{Taylor series approximation}
 \[f(x)=f(a)+f'(a)(x-a)+\frac{f``(a)(x-a)^{2}}{2} + \frac{f^{(3)}(a)(x-a)^{3}}{6}+O(\Delta x)^{4}\]
@@ -66,51 +75,51 @@ $O(\Delta x) ^{4}$ are the truncated terms.\cite{Big O}. Using the above formula
 In the same way we can calculate $f(x-\Delta x)$:
 \begin{equation}f(x- \Delta x)=f(x)-f`(x)\Delta x + \frac{f``(x)(\Delta x)^{2}}{2}-\frac{f^{(3)}(x)*(\Delta x)^{3}}{6} + O(\Delta x) ^{4} \label{eqn:x min deltax}\end{equation}
 Using equation \ref{eqn:x plus deltax} we can approximate f'(x):
-\[f(x+\Delta x) -f(x) = f'(x)\Delta x + O(x)^{2}\]
+\[f(x+\Delta x) -f(x) = f'(x)\Delta x + O(\Delta x)^{2}\]
 \[f`(x)=\frac{f(x+\Delta x) - f(x)}{\Delta x} + O(\Delta x)\]
-$O(x)^{2}$ changes in $O(x)$ if it is divided by $\Delta x $. The equation above is called a first order approximation , because the lowest power in the big O is 1. The lowest power of the big O of a second order approximation is 2. $O(\Delta x)^{n}$ decreases to zero when $\Delta x$ becomes smaller, because $O(\Delta x)^{n}$ consists only of powers of $\Delta x$. The higher the lowest power, the fastest $O(\Delta x)^{n}$ declines and the better the derivative is approximated. We can calculate the second order approximation using equations \ref{eqn:x plus deltax} and \ref{eqn:x min deltax}
+$O(x)^{2}$ changes into $O(x)$ if it is divided by $\Delta x $. The equation above is called a first order approximation, because the lowest power in the big O is 1. The lowest power of the big O of a second order approximation is 2. $O(\Delta x)^{n}$ decreases to zero when $\Delta x$ becomes smaller, because $O(\Delta x)^{n}$ consists only of powers of $\Delta x$. The higher the lowest power, the faster $O(\Delta x)^{n}$ declines and the better the derivative is approximated. We can calculate the second order approximation using equations \ref{eqn:x plus deltax} and \ref{eqn:x min deltax}
 \begin{equation}f'(x)=\frac{f(x+\Delta x)-f(x-\Delta x)}{2\Delta x}\label{taylor deriative}\end{equation}
 We can also use \ref{eqn:x plus deltax} and \ref{eqn:x min deltax} to calculate the second approximation of the second derivative.
 \begin{equation}f''(x)=\frac{f(x+\Delta x)-2f(x)+f(x-\Delta x)}{(\Delta x)^{2}} \label{second derivative} \end{equation}
-Equation \ref{taylor deriative} can be used to turn equations \ref{NSE-x} , \ref{NSE-y} and \ref{NSE-z} into a set of equations without deriatives. The values of these equations can be calculated. 
+Equation \ref{taylor deriative} can be used to turn a differential equation into an equation without derivatives, which is much easier to solve.
 %TODO: check whether they are linear or not -WD
 %FEM
-\subsubsection{Finite Element Method(FEM)}
-The Finite Element Method(FEM) is a commonly used to solve differential equations. It has a lot of applications, CFD's being only one of them. Unlike the FDM the FEM does not solve the equations for only a few points, but for the entire domain. It does so by approximating the differential equation with linear subfunctions. The linear subfunctions will have unknown coefficients. These coefficients are put into a matrix.
+\subsubsection{Finite Element Method (FEM)}
+The Finite Element Method(FEM) is commonly used to solve differential equations. It has a lot of applications, CFD (Computational fluid dynamics) being only one of them. Unlike the FDM the FEM does not solve the equations for only a few points, but for the entire domain. It does so by approximating the differential equation with linear subfunctions. The linear subfunctions will have unknown coefficients. These coefficients are put into a matrix.
 %FVM
 \subsubsection{Finite Volume Method(FVM)}
-The finite volume method calculates the movement of "fluid particles". These particles are discretized points of a certain volume.\cite{Finite Volume} Therefore the FVM gives the exact expression for the average value of the solution (over the hence described volume). For each volume there is a flow in (Diffusion), a flow out (Convection), a transient term(the disturbance of the volume) and a source term resulting in the formula below.
-\[\pdv{\rho\phi}{t} + \nabla \cdot (\rho\boldsymbol{v}\phi) = \nabla \cdot (\Gamma^\phi\nabla\phi) + Q^\phi\]
+The finite volume method calculates the movement of "fluid particles". These particles are discretized points of a certain volume.\cite{Finite Volume} Therefore the FVM gives the exact expression for the average value of the solution (over the hence described volume). %For each volume there is a flow in (Diffusion), %a flow out (Convection), a transient term(the disturbance of the %volume) and a source term resulting in the formula below.
+%\[\pdv{\rho\phi}{t} + \nabla \cdot (\rho\boldsymbol{v}\phi) = %\nabla \cdot (\Gamma^\phi\nabla\phi) + Q^\phi\]
 %Spectral Element method
 \subsubsection{Spectral Element Method}
-The spectral element method is a solution to the partial differentiation equation derived from the finite element method.
+The spectral element method is a solution to the partial differential equation derived from the finite element method.
 %Latice Boltzmann Method
 \subsubsection{Lattice Boltzmann Method}
-The Lattice Boltzmann Method models liquids as if the liquid exists of a n number of fictive particles. The method divides the simulation in two interchanging steps, collision and streaming. The steps change the density $\rho{(\vec{x},t)}$ at position $\vec{x}$ at time t. Because the Lattice Boltzmann method works within a lattice (a grid with a n amount of points in a m number of dimensions), you can draw up a formula $f_{i}(\vec{x},t)$. In this formula $f_{i}$ is the the influence of a neighbouring point i on $\vec{x}$ (a point on the lattice). The total movement vector in a point then becomes: \[P_{i}(\vec{x},t) = \sum_{i=0}^{a}f_{i}(\vec{x},t)\] Where a is the number of adjacent points on the lattice and P the total movement of the particle.
+The Lattice Boltzmann Method models liquids as if the liquid exists of an n number of fictive particles. The method divides the simulation into two interchanging steps, collision and streaming. The steps change the density $\rho{(\vec{x},t)}$ at position $\vec{x}$ at time t. Because the Lattice Boltzmann method works within a lattice (a grid with an n amount of points in an m number of dimensions), you can draw up a formula $f_{i}(\vec{x},t)$. In this formula $f_{i}$ is the the influence of a neighbouring point i on $\vec{x}$ (a point on the lattice). The movement vector in a point then becomes: \[P_{i}(\vec{x},t) = \sum_{i=0}^{a}f_{i}(\vec{x},t)\] Where a is the number of adjacent points on the lattice and P the movement of the particle.
 \paragraph{Collision} %Misschien handig om uit te leggen wat een lattice is. 
 For simulating the collision of particles within the lattice, the formula is \cite{Lattice Boltzmann implementation}:
 \[f_{i}(\vec{x}, t + \delta_t) = f_{i}(\vec{x}, t) + \frac{f_{i}^{eq}(\vec{x},t) - f_{i}(\vec{x},t)}{\tau_{f}}\]
-$f_{i}(\vec{x}, t + \delta_t)$ is the influence at time $t + \delta_t$ with $\delta_t$ the size of the time step. A smaller $\delta_t$leads to a more accurate simulation but also lead to more computing time required to simulate a certain situation. \\
+$f_{i}(\vec{x}, t + \delta_t)$ is the influence at time $t + \delta_t$ with $\delta_t$ the size of the time step. A smaller $\delta_t$ leads to a more accurate simulation, but also leads to more computing time required to simulate a certain situation. \\
 $\tau_{f}$ is a constant that depends on the viscosity of the simulated liquid. $f_{i}^{eq}(\vec{x},t)$ is the equilibrium density.
 \paragraph{Streaming}
 For simulating the actual movement of the particles the formula is: 
 \[f_{i}(\vec{x}+\vec{e_i},t + \delta_t) = f_{i}(\vec{x},t)\]
-Here $f_{i}(\vec{x}+\vec{e_i},t + \delta_t)$ is the fluid density at point $\vec{x}$ and $\vec{e}$ is the movement vector(the change in perceived density) of the density.
+Here $f_{i}(\vec{x}+\vec{e_i},t + \delta_t)$ is the fluid density at point $\vec{x}$ and $\vec{e}$ is the movement vector (the change in perceived density) of the density.
 %Boundary Element Method
 \subsubsection{Boundary Element Method}
-The boundary element method is a method of simulating fluid dynamics with the presence of a influence of the boundary of the simulation, on the simulation. For this reason the boundary element method is quite complex and not really in the scope of this project. \cite{Boundary Element Method}
+The boundary element method is a method of simulating fluid dynamics with the presence of an influence of the boundary of the simulation, on the simulation. For this reason the boundary element method is quite complex and not really in the scope of this project. \cite{Boundary Element Method}
 %Turbulence Methods
 \subsubsection{Turbulence methods}
 Apart from the above mentioned methods, there are also turbulence methods. These methods are able to simulate turbulent flows of liquids. These methods use a huge amount of computing power and thus are not really feasible for this paper.
 %Some Choices
 \subsection{Some Choices}
-Due to the finite difference method being relatively easy to implement, we have decided to start our simulation by implementing that method. For a programming language we have chosen (provisionally) for Rust as it is fast and reasonably easy.
+Due to the finite difference method being relatively easy to implement, we have decided to start by implementing that method. For a programming language we have chosen (provisionally) for Rust \cite{Rust} (the programming language) as it is fast and reasonably easy.
 %Neglections
-\subsection{Neglections in the Navier Stokes Equations}
+\subsection{Neglections in the Navier-Stokes Equations}
 \subsubsection{The dimension}
 It is easier for computers to solve a 2D problem than a 3D problem, because for a 2D problem the number of grid points is smaller then for a 3D problem. For example, a 10 by 10 grid contains 100 points, while a 10 by 10 by 10 grid contains 1000 points. Furthermore, 2D rendering is easier then 3D rendering. However, nowadays computers are very fast. Therefore, our computers will be able to solve 3D problems. Since we intend to simulate a container with water, we will do a 3D simulation.
-\subsubsection{Compressible and incompressible Navier Stokes Equations}
-All fluids can be compressed. Their volume gets smaller when the pressure on the gas or fluid increases. However, in many cases the change in volume is not significant, then the flows can be approximated as incompressible flows. The Navier Stokes Equations can be simplified to the incompressible Navier Stokes Equations when a fluid is not compressible. Water is not very compressible\cite{NSE features}, so we will use the incompressible Navier Stokes Equations. The incompressible Navier Stokes equations for a Newtonian fluid, such as water, are:\cite{Navier Stokes incompressible} \cite{NASA NSE}
+\subsubsection{Compressible and incompressible Navier-Stokes Equations}
+All fluids can be compressed. Their volume gets smaller when the pressure on the gas or liquid increases. However, in many cases the change in volume is not significant therefore the flows can then be approximated as incompressible flows. The Navier-Stokes Equations can be simplified to the incompressible Navier-Stokes Equations when a fluid is not compressible. Water is not very compressible\cite{NSE features}, so we will use the incompressible Navier-Stokes Equations. The incompressible Navier-Stokes equations for a Newtonian fluid, such as water, are:\cite{Navier Stokes incompressible} \cite{NASA NSE}
 \begin{equation}
 \begin{aligned}
 &\pdv{v_{x}}{x}+\pdv{v_{y}}{y}+\pdv{v_{z}}{z}=0\\
@@ -120,32 +129,32 @@ All fluids can be compressed. Their volume gets smaller when the pressure on the
 \end{aligned}
 \label{NSE incompressible}
 \end{equation}
-The equation at the top is called the continuity equation. The others are the momentum equations. The spatial derivatives of the left hand sides are called the convection terms. The parts on the right hand sides between brackets are called the diffusion terms. The parts involving pressure are the pressure terms and \(\rho g\) is the gravitational force.
+The equation at the top is called the continuity equation. The others are the momentum equations. The spatial derivatives of the left hand side are called the convection terms. The parts on the right hand side between brackets are called the diffusion terms. The parts involving pressure are the pressure terms and \(\rho g\) is the gravitational force.
 \subsubsection{Viscosity}
-All fluids have viscosity. But, like compressibility, it can be neglected sometimes. Viscosity is: \(\eta=\frac{F/A}{dv_{x}/dz }\). Here F is the shear force, that is the force parallel to a surface. A is the surface and \(dv_{x}/dz\) is the change in velocity.\cite{Viscosity}. We will not neglect viscosity, because we do intend to simulate a water container with boundaries and viscosity is important near the boundaries, because there is dissipation over there.\cite{NSE features} Dissipation is the conversion of some for of energy to heat energy\cite{Dissipation}. Without viscosity the Navier Stokes Equations reduce to the Euler Equations\cite{NSE features}.
+All fluids have viscosity. But, like compressibility, it can be neglected sometimes. Viscosity is: \(\eta=\frac{F/A}{dv_{x}/dz }\). Here F is the shear force, that is the force parallel to a surface. A is the surface and \(dv_{x}/dz\) is the change in velocity.\cite{Viscosity}. We will not neglect viscosity, because we do intend to simulate a water container with boundaries and viscosity is important near boundaries, because there is dissipation over there.\cite{NSE features} Dissipation is the conversion of some form of energy to heat energy\cite{Dissipation}. Without viscosity the Navier-Stokes Equations reduce to the Euler Equations\cite{NSE features}.
 \subsubsection{Laminar and Turbulent flows}
-Flows can be either laminar or turbulent\cite{NSE features}. In laminar flows there is no disruption between adjacent layers, but in turbulent flows there is. Turbulent flows have chaotic paths and they swirl. The Navier Stokes Equations for laminar and turbulent flows are the same. But there are very small changes in pressure, velocity and temperature in turbulent flows, which should be dealt with. Although a turbulent flow can be modeled using the Navier Stokes Equations, this costs a lot of computation power due to the small changes.\cite{Turbulence} Therefore, they are often modeled in another way. The simulation of turbulent flows is beyond the scope of this project.
+Flows can be either laminar or turbulent\cite{NSE features}. In laminar flows there is no disruption between adjacent layers, but in turbulent flows there is. Turbulent flows have chaotic paths and they swirl. The Navier-Stokes Equations for laminar and turbulent flows are the same. But there are very small changes in pressure, velocity and temperature in turbulent flows, which should be dealt with. Although a turbulent flow can be modelled using the Navier-Stokes Equations, this costs a lot of computation power due to small changes.\cite{Turbulence} Therefore, they are often modelled in another way. The simulation of turbulent flows is beyond the scope of this project.
 \subsubsection{Steady and unsteady} \label{(un)steady}
-A flow is either steady or unsteady\cite{NSE features}. In a steady flow parameters, such as velocity, do not change over time. In a unsteady flow parameters can change over time.\cite{Steady and unsteady} We will simulate a unsteady flow, because we want that the water in the container is able to move.
+A flow is either steady or unsteady\cite{NSE features}. In a steady flow parameters, such as velocity, do not change over time. In a unsteady flow parameters can change over time.\cite{Steady and unsteady} We will simulate a unsteady flow, because we want the water in the container to be able to move.
 %Boundary conditions
 \subsection{Boundary conditions}
 To solve a partial differential equation it is necessary to enforce boundary conditions. A container with water has two types of boundaries. One type are the walls and the floor. The other is the free surface of the water. The free surface is the surface where the water and air touch each other. The boundary condition at the free surface is trickier than that at the walls and floor, since the free surface can move, while the walls and floors can not. 
 \subsubsection{No-slip boundary condition} \label{no-slip boundary condition}
 The no-slip boundary condition supposes the velocity of a fluid that touches a solid is equal to the velocity of the solid \cite{no-slip boundary condition}.
 \subsubsection{Free slip boundary condition}
-The free-slip boundary condition presumes the velocity of the fluid perpendicular to the wall is zero, so the fluid can not move through the wall. But, it does not restrict the velocity parallel to the wall.\cite{free slip boundary condition} 
+The free-slip boundary condition presumes the velocity of the fluid perpendicular to the wall is zero, so the fluid can not move through the wall. But it does not restrict the velocity parallel to the wall.\cite{free slip boundary condition} 
 \subsubsection{Dynamic boundary condition}
 The dynamic boundary condition assumes the pressure on the free surface must be constant.
 \newpage
 %Programming
-\section{The implementation of the finite difference method}
+\section{The implementation of the finite difference method} \label{The implementation of the finite difference method}
 \subsection{Constants} \label{Constants}
-First, we define some constants. We have not taken significance in account, because we sometimes needed to add more zeros to prevent errors. These errors happen because Rust only wants decimal numbers as f32, although they can end with .0 .
+First, we define some constants. We have not taken significance into account, because we sometimes needed to add more zeros to prevent errors. These errors happen because Rust only wants f32's as decimal numbers, although they can end with .0 .
 \begin{lstlisting}[language=Rust, style=boxed, breaklines=true]
 ///Physical constants
 const GRIDELEMENTSCALE: f32 = 0.05;//The size of a grid element in meters(denoted in equations as delta x)
 const TIMESTEPSIZE: f32 = 0.0005;//The size of a time step size in seconds
-const DENSITY: f32 = 1000.0;//Density of the liquid in kg/m^{3}. We simulate water.
+const DENSITY: f32 = 997.0;//Density of the liquid in kg/m^{3}. We simulate water.
 const EXTERNALFORCE : [f32; 3] = [0.0,0.0,-9.81];//Gravity in N
 const VISCOSITY: f32 = 0.001;//Viscosity in Pa*s.
 const ATMOSPHERIC_PRESSURE: f32=101.325;//Atmospheric pressure in Pa
@@ -188,7 +197,7 @@ const PRESSUREGRIDSIZE: [usize; 3] = [10,10,10];//x,y,z
 \node[] at (5.5,-0.8) {Using a staggered grid};
 \end{tikzpicture} \caption{Collocated and staggered grids} \label{Odd-even decoupling} \end{figure}
 %Odd-even decoupling
-The Finite Difference Method calculates the pressure and velocity at discrete grid points. We can choose ourselves which variables will be calculated at which points. It would be the most easy to store all variables at every point. Such a grid is called a collocated grid\cite{Staggered grid}. However, as figure \ref{Odd-even decoupling} shows, there will be no fluid flow between cell i-1 and i and cell i and i+1 when the pressure in cells i-1 and i+1 is equal in such a grid. This phenomenon is called odd-even decoupling and happens because the derivative in cell i will be zero\cite{Staggered grid}. It is called so because information from odd and even cells are not combined properly\cite{Staggered grid}. To solve that problem we will use a staggered grid, such as in the right side of figure \ref{Odd-even decoupling}. A staggered grid consists of cells. The pressure is stored in the cell center and the velocities in the cell edges that are perpendicular to them\cite{Staggered grid}. As one can see, the derivatives will not be zero anymore, since the flow between two cells will not depend on the pressure in other cells anymore.
+The Finite Difference Method calculates the pressure and velocity at discrete grid points. We can choose ourselves which variables will be calculated at which points. It would be the most easy to store all variables at every point. Such a grid is called a collocated grid\cite{Staggered grid}. However, as figure \ref{Odd-even decoupling} shows, there will be no fluid flow between cell i-1 and i and cell i and i+1 when the pressure in cells i-1 and i+1 is equal in such a grid. This phenomenon is called odd-even decoupling and happens because the derivative in cell i will be zero\cite{Staggered grid}. It is so called because information from odd and even cells are not combined properly\cite{Staggered grid}. To solve this problem we will use a staggered grid, such as in the right side of figure \ref{Odd-even decoupling}. A staggered grid consists of cells. The pressure is stored in the cell center and the velocities in the cell edges that are perpendicular to them\cite{Staggered grid}. As one can see, the derivatives will not be zero anymore, since the flow between two cells will not depend on the pressure in other cells anymore.
 \newpage
 \subsection{Boundary conditions and walls} \label{Boundary conditions and walls}
 \begin{figure}[ht]
@@ -220,9 +229,9 @@ The Finite Difference Method calculates the pressure and velocity at discrete gr
 \caption{Wall boundary conditions} \label{wall boundary conditions}
 \end{figure}
 
-The water container is surrounded by walls on all sides.  We will use a no-slip boundary conditions at the walls, as discussed in paragraph \ref{no-slip boundary condition}\cite{MAC}. This means the velocities of the water at the wall will be equal to the velocity of the wall. The wall velocity is always zero, so the velocity of the water is zero at points on the wall. Therefore, all velocity components should be zero for wall points\cite{MAC}. Unfortunately, as can be seen in figure \ref{wall boundary conditions}.a only the velocity perpendicular to the wall has points that are at the wall. However, by using an imaginary velocity outside the box we can obtain the velocity at the wall using the average\cite{MAC}:
+The water container is surrounded by walls on all sides.  We will use no-slip boundary conditions at the walls, as discussed in paragraph \ref{no-slip boundary condition}\cite{MAC}. This means the velocities of the water at the wall will be equal to the velocity of the wall. The wall velocity is always zero, so the velocity of the water is zero at points on the wall. Therefore, all velocity components should be zero for wall points\cite{MAC}. Unfortunately, as can be seen in figure \ref{wall boundary conditions}.a only the velocity perpendicular to the wall has points that are at the wall. However, by using an imaginary velocity outside the box we can obtain the velocity at the wall using the average\cite{MAC}:
 \[v_{wall}=\frac{v_{imaginary}+v_{border}}{2}\]
-Here v is parallel to the wall(so not necessarily in the y-direction), \(v_{wall}\) is the velocity at a wall point, \(v_{border}\) is the velocity that is closest to the certain wall point and \(v_{imaginary}\) is the imaginary velocity. We can modify the formula to obtain \(v_{imaginary}\) quite easily:
+Here v is parallel to the wall (so not necessarily in the y-direction), \(v_{wall}\) is the velocity at a wall point, \(v_{border}\) is the velocity that is closest to the certain wall point and \(v_{imaginary}\) is the imaginary velocity. We can modify the formula to obtain \(v_{imaginary}\) quite easily:
 \[\begin{split}
 &v_{wall}=0\\
 &=>\frac{v_{imaginary}+v_{border}}{2}=0\\
@@ -232,8 +241,8 @@ Here v is parallel to the wall(so not necessarily in the y-direction), \(v_{wall
 Because of the imaginary velocity grid points, we will have to make the grid larger in some directions.\\ \\
 
 In short, we have the following boundary conditions: \\
-1) The velocities on the edge of the box that are perpendicular to the box are zero.\\
-2) The imaginary velocities are equal to the inverse of the velocities opposite of the wall.
+1) The velocities on the edge of the box that are perpendicular to the edge of the box are zero.\\
+2) The imaginary velocities are equal to the additive inverse of the velocities opposite of the wall.
 
 \newpage
 \subsection{The sizes of the grids} \label{The sizes of the grids}
@@ -261,7 +270,7 @@ In short, we have the following boundary conditions: \\
 \label{grid sizes}
 \end{figure}
 
-If we were using a collocated grid we would store our data in an array with the desired dimensions. However, we are using a staggered grid. This complicates the grid sizes a lot. We will have to use three seperate grids for velocity with different sizes and another grid for the pressure. Let u, v and w denote the velocities in respectively the x, y and z direction.  In the directions that are orthogonal to the velocities of a velocity grid the size of that grid will be the size of the pressure grid plus one. We have illustrated this in figure \ref{grid sizes}. The size of the grid in the dimension that is parallel to the velocities that the grid contains is the pressure grid size plus two. The sizes in those directions are that size because of the imaginary velocities we need to store.
+If we were using a collocated grid we would store our data in an array with the desired dimensions. However, we are using a staggered grid. This complicates the grid sizes a lot. We will have to use three seperate grids for velocity with different sizes and another grid for the pressure. Let u, v and w denote the velocities in respectively the x, y and z direction.  In the directions that are orthogonal to the velocities of a velocity grid the size of that grid will be the size of the pressure grid plus one. We have illustrated this in figure \ref{grid sizes}. The size of the grid in the dimension that is parallel to the velocities that the grid contains is the pressure grid size plus two. The sizes in those directions are due to the the imaginary velocities we need to store.
 
 \newpage
 
@@ -278,13 +287,13 @@ We will express the convection terms of equation \ref{NSE incompressible} as \(\
   \partial _cw=\rho(&u\pdv{w}{x}+v\pdv{w}{y}+w\pdv{w}{z})
 \end{split}\label{convection terms}
 \end{equation}
-Computers can not exactly calculate the derivatives, so we will have to approximate them to solve equation \ref{NSE incompressible}. We will be using Forward Time Central Space(FTCS) for approximating the derivatives\cite{MAC}. This means we will use first order forward derivatives for time and second order central derivatives for space. We can calculate the convection terms \(u\pdv{u}{x}\), \(v\pdv{v}{y}\) and \(w\pdv{w}{x}\)  using equation \ref{taylor deriative}. In the equations below, one might notice that we have used \(\Delta x\) everywhere and have not used \(\Delta y\) or \(\Delta z\). We have done this because we set \(\Delta x = \Delta y = \Delta z\). 
+Computers can not exactly calculate the derivatives, so we will have to approximate them to solve equation \ref{NSE incompressible}. We will be using Forward Time Central Space (FTCS) to approximate the derivatives\cite{MAC}. This means we will use first order forward derivatives for time and first or second order central derivatives for space. We can calculate the convection terms \(u\pdv{u}{x}\), \(v\pdv{v}{y}\) and \(w\pdv{w}{x}\)  using equation \ref{taylor deriative}. In the equations below, one might notice that we have used \(\Delta x\) everywhere and have not used \(\Delta y\) or \(\Delta z\). We have done this because we set \(\Delta x = \Delta y = \Delta z\). 
 \[\begin{split}
   u\pdv{u}{x}=& u_{i,j,k}\frac{u_{i+1,j.k}-u_{i-1,j,k}}{2\Delta x}\\
   v\pdv{v}{y}=& v_{i,j,k}\frac{v_{i,j+1.k}-v_{i,j-1,k}}{2\Delta x}\\
   w\pdv{w}{z}=& w_{i,j,k}\frac{w_{i,j.k+1}-w_{i,j,k-1}}{2\Delta x}
 \end{split}\]
-However, calculating the other convection terms is more complex, because we have to estimate a velocity at point (i,j,k) of a grid which is not defined at that grid point. We can however estimate those velocities by taking the average of some nearby velocities, as in figure \ref{velocity to other grid}\cite{MAC}.
+However, calculating the other convection terms is more complex. It is more complex because we have to estimate a velocity at point (i,j,k) of a grid which is not defined at that grid point. We can however estimate those velocities by taking the average of some nearby velocities, as in figure \ref{velocity to other grid}\cite{MAC}.
 \begin{figure}[h]
 \centering
 % body of the figure
@@ -322,7 +331,7 @@ $};
   v\pdv{w}{y}&=\frac{v_{i,j-1,k}+v_{i,j-1,k+1}+v_{i,j,k}+v_{i,j,k+1}}{4}\frac{w_{i,j+1,k}-w_{i,j-1,k}}{2\Delta x}\\
 \end{split}
 \] \label{average and partial}
-We do not want to use these long equations in the code everywhere, since that would be a lot of work and unclear. Therefore, we will create a function that will calculate the partial derivative and a function that will calcute the average velocity at at point. To do this, we first need to create a struct that stores a velocity grid and the dimension of that grid.
+We do not want to use these long equations in the code everywhere, since that would be a lot of work and unclear. Therefore, we will create a function that will calculate the partial derivative and a function that will calcute the average velocity at a point. To do this, we first need to create a struct that stores a velocity grid and the dimension of that grid.
 
 \begin{lstlisting}[language=Rust, style=boxed, breaklines=true]
 pub struct VelocityGrid{
@@ -330,7 +339,7 @@ pub struct VelocityGrid{
     dimension: usize,
 }
 \end{lstlisting}
-As one can see, the grid is stored in a vector(Vec means vector). In Rust, a vector is an array that can have different sizes. Furthermore, the dimension of the array is stored as a usize, which basically is an integer with a maximum length that corresponds to the maximum length of an array. The values 0,1 and 2 for dimension denote the x-, y-, and z-direction respectively. To prevent the use of a lot of if-statements, we create a function that can convert the dimension number to an array for which all elements, except the element corresponding to the dimension number are zero. 
+As one can see, the grid is stored in a vector(Vec means vector). In Rust, a vector is an array that can have different sizes. Furthermore, the dimension of the array is stored as a usize, which basically is an integer with a maximum length that corresponds to the maximum length of an array. The values 0, 1 and 2 for dimension denote the x-, y-, and z-direction respectively. To prevent the use of a lot of if-statements, we create a function that can convert the dimension number to an array for which all elements, except the element corresponding to the dimension number are zero. 
 \begin{lstlisting}[language=Rust, style=boxed, breaklines=true]
 //Gives you the unit vector of the dimension with the given number.
 //x - 0, y - 1, z - 2
@@ -359,7 +368,7 @@ fn get_velocity_from_orthogonal_grid(orthogonal_grid: &VelocityGrid, x:usize, y:
         +orthogonal_grid.grid[x+dim_to[0]][y+dim_to[1]][z+dim_to[2]]);//right up
 }
 \end{lstlisting}
-Now we use the above two functions to write a function that calculates the convections terms \(\partial _cu\), \(\partial _cv\) and \(\partial _cw\) from equation \ref{convection terms}. We will write one function that is able to calculate all these terms: 
+Now we use the above two functions to write a function that calculates the convection terms \(\partial _cu\), \(\partial _cv\) and \(\partial _cw\) from equation \ref{convection terms}. We will write one function that is able to calculate all these terms: 
 \begin{lstlisting}[language=Rust, style=boxed, breaklines=true]
 fn convection_term(velocity_field_last_time_step: &VelocityGrid,orthogonal_velocity_field_a: &VelocityGrid, orthogonal_velocity_field_b: &VelocityGrid, x: usize, y:usize, z:usize ) -> f32{// calculate the convection term
      return DENSITY*(velocity_field_last_time_step.grid[x][y][z]*second_order_spatial_derivative(&velocity_field_last_time_step, x, y, z, velocity_field_last_time_step.dimension)
@@ -400,7 +409,7 @@ So we are now able to calculate the diffusion term using:
 \begin{lstlisting}[language=Rust, style=boxed, breaklines=true]
 let diffusion=VISCOSITY*(laplacian(velocity_field, x, y, z));
 \end{lstlisting}
-We will not put this into a function already, because we do not know all the other terms yet. 
+We will not put this into a function just yet, because we do not know all the other terms. 
 \newpage
 \subsection{Discretising the pressure}
 \begin{figure}[ht]
@@ -438,7 +447,7 @@ Here, (i, j, k) denotes the coordinates of the velocity in the direction we are 
 
 
 \subsection{Implicit and explicit methods} \label{implicit and explicit}
-Discretising the time can be done by using either an implicit or an explicit methods.\cite{enterfea} In explicit methods, all terms except for one belong to the current timestep and the remanining term that belongs to the next timestep can be calculated easily. \cite{enterfea}In implicit methods, more variables belong to the next timestep. At first, one variable is calculated in the same way as in the explicit methods and the values of the other variables are not changed. \cite{enterfea} Thereafter, the variables  are corrected iteratively so that the solution will converge. \cite{enterfea} In the case of the incompressible Navier-Stokes equation, this means the continuity equation will converge to zero. Consequently, in explicit methods the continuity equation will always converge to zero. However, in explicit methods it is just assumed that the continuity equation holds. For the continuity equation to hold the timestep size should be very low in explicit methods. \cite{enterfea} The timestep size can be higher in implicit methods, so less timesteps are needed. \cite{enterfea} However, explicit methods do not need multiple iterations per timestep. Therefore, they compute a timestep faster. \cite{enterfea}We will use an implicit method because we intend to be able to do long simulations and they are better for larger time intervals.\cite{enterfea}
+Discretising the time can be done by using either an implicit or an explicit method.\cite{enterfea} In explicit methods, all terms except for one belong to the current timestep and the remanining term that belongs to the next timestep can be calculated easily.\cite{enterfea} In implicit methods, more variables belong to the next timestep. At first, one variable is calculated in the same way as in the explicit methods and the values of the other variables are not changed. \cite{enterfea} Thereafter, the variables  are corrected iteratively so that the solution will converge. \cite{enterfea} In the case of the incompressible Navier-Stokes equation, this means the continuity equation will converge to zero. Consequently, in explicit methods the continuity equation will always converge to zero. However, in explicit methods it is just assumed that the continuity equation holds. For the continuity equation to hold the timestep size should be very low in explicit methods. \cite{enterfea} The timestep size can be higher in implicit methods, so less timesteps are needed. \cite{enterfea} However, explicit methods do not need multiple iterations per timestep. Therefore, they compute a timestep faster.\cite{enterfea} We will use an implicit method because we intend to be able to do long simulations and they are better for larger time intervals.\cite{enterfea}
 
 
 \subsection{Discretising the time}
@@ -450,8 +459,7 @@ Using the formulas for \(\partial _du\) and \(\partial _dc\) we can write equati
   \rho \pdv{v}{t} + \partial _cv=&-\pdv{p}{y}+\partial _dv + \rho g_y\\
   \rho \pdv{w}{t} + \partial _cw=&-\pdv{p}{z}+\partial _dw + \rho g_z
 \end{split}
-\end{equation}\label{short NSE}
-We use this notation because it is a lot shorter. As discussed previously, we will use forward time for the derivatives. Let \(a^n\) denote a in the current timestep and \(a^{n+1}\) a in the next timestep, where a is a variable. As discussed in chapter \ref{implicit and explicit}, we will use an implicit method. We will rewrite the Navier Stokes Equations with the spatial pressure derivative of the next timestep. This will allow us to enforce convergence. \cite{MAC}
+\end{equation}\label{short NSE}We use this notation because it is a lot shorter. As discussed previously, we will use forward time for the derivatives. Let \(a^n\) denote $a$ in the current timestep and \(a^{n+1}\) denote a in the next timestep, where $a$ is a variable. As discussed in chapter \ref{implicit and explicit}, we will use an implicit method. We will rewrite the Navier-Stokes Equations with the spatial pressure derivative of the next timestep. This will allow us to enforce convergence. \cite{MAC}
 \begin{equation}
 \begin{split}
   \rho \frac{u^{n+1}-u^n}{\Delta t} + \partial _cu=&-\pdv{p^{n+1}}{x}+\partial _du + \rho g_x\\
@@ -459,7 +467,7 @@ We use this notation because it is a lot shorter. As discussed previously, we wi
   \rho \frac{w^{n+1}-w^n}{\Delta t} + \partial _cw=&-\pdv{p^{n+1}}{z}+\partial _dw + \rho g_z
 \end{split}\label{time discretised NSE}
 \end{equation} 
-Unfortunately, we now have two variables for each formula: \(\frac{u^{n+1}-u^n}{\Delta t}\) and \(\pdv{p^{n+1}}{x}\), for x for instance. Therefore, we can not just solve this formula. We can however set the pressure term to the current pressure term and correct the error that is created in that way later. We will denote the velocities obtained in that way \(\tilde{u}\), \(\tilde{v}\) and \(\tilde{w}\)\cite{MAC}.
+Because we are using an explicit method, we now have two variables for each formula: \(\frac{u^{n+1}-u^n}{\Delta t}\) and \(\pdv{p^{n+1}}{x}\), for x for instance. Therefore, we can not just solve this formula. We can however set the pressure term to the current pressure term and correct the error that is created in this way later. We will denote the velocities obtained in this way \(\tilde{u}\), \(\tilde{v}\) and \(\tilde{w}\)\cite{MAC}.
 \begin{equation}
 \begin{split}
   \rho \frac{\tilde{u}-u^n}{\Delta t} + \partial _cu=&-\pdv{p^{n}}{x}+\partial _du + \rho g_x\\
@@ -467,7 +475,7 @@ Unfortunately, we now have two variables for each formula: \(\frac{u^{n+1}-u^n}{
   \rho \frac{\tilde{w}-w^n}{\Delta t} + \partial _cw=&-\pdv{p^{n}}{z}+\partial _dw + \rho g_z
 \end{split}\label{guess NSE}
 \end{equation} 
-These equations contain only one unknown variable(per equation). We can rewrite them to calculate that variable. 
+These equations contain only one unknown variable (per equation). We can rewrite them to calculate that variable. 
 \begin{equation}
   \begin{split}
   \tilde{u}=u^{n}+\frac{\Delta t}{\rho}(-\pdv{p^{n}}{x}-\partial _cu +\partial _du + \rho g_x)\\
@@ -480,7 +488,9 @@ Now we substract equation \ref{time discretised NSE} from \ref{guess NSE}.
 \begin{equation}
 	\begin{split}
 			%x direction
-			\rho & \frac{\tilde{u} - u^{n+1}}{\Delta t} \\ &= - \frac{p^{n}_{i,j-1,k-1}- p^{n+1}_{i-1,j-1,k-1}-(p^{n+1}_{i,j-1,k-1}- p^{n}_{i-1,j-1,k-1})}{\Delta x}\\
+			\rho & \frac{\tilde{u} - u^{n+1}}{\Delta t} \\ &=
+      \pdv{p^{n+1}}{x}-\pdv{p^{n}}{x}\\ &=
+      \frac{p^{n+1}_{i,j-1,k-1}-p^{n+1}_{i-1,j-1,k-1}-(p^{n}_{i,j-1,k-1}- p^{n}_{i-1,j-1,k-1})}{\Delta x}\\
 			&=-\frac{(p^{n+1}_{i-1,j-1,k-1}-p^{n}_{i-1,j-1,k-1})- 
 			(p^{n+1}_{i,j-1,k-1}-p^{n}_{i,j-1,k-1})
 		}{\Delta x}\\
@@ -505,7 +515,7 @@ Now we substract equation \ref{time discretised NSE} from \ref{guess NSE}.
     w^{n+1}=\tilde{w}-\frac{\Delta t}{\rho \Delta x}(p'_{i-1,j-1,k}- p'_{i-1,j-1,k-1})\\
   \end{split} \label{next timestep velocities}
 \end{equation}
-However, we still need to know the pressure to solve this equation. The velocity and pressure should satisfy the continuity equation(the upper equation in \ref{NSE incompressible}). We will use it to obtain the pressure.\cite{MAC}
+However, we still need to know the pressure to solve this equation. The velocity and pressure should satisfy the continuity equation (the upper equation in \ref{NSE incompressible}). We will use it to obtain the pressure.\cite{MAC}
 \[
   \pdv{u}{x}+\pdv{v}{y}+\pdv{w}{z}=0
 \]
@@ -556,7 +566,7 @@ We move all the pressure terms to the right hand side of the equation and keep t
     &+p'_{i,j,k+1}+p'_{i,j,k-1} - 6 p'_{i,j,k})
   \end{split}
 \]
-We assume that the pressure corrections for p other than (i,j,k) is zero. This will allow us to calculate the pressure correction in that point.\cite{MAC}
+We assume that the pressure corrections for p other than (i,j,k) are zero. This will allow us to calculate the pressure correction in that point.\cite{MAC}
 \[
   \begin{split}
   \tilde{u}_{i+1,j+1,k+1}&-\tilde{u}_{i, j+1, k+1}
@@ -583,14 +593,14 @@ The above equation usually reaches convergence too slow, it should therefore be 
 Even though we multiply by \(\omega _0\), convergence is often not yet reached after one pressure correction. We therefore need to apply the pressure correction formula until convergence is reached.\cite{MAC}. 
 
 \subsection{The algorithm}
-As we have just discussed we have to apply the pressure correction formula several times, the complete algoritm is: \cite{MAC}
+As we have just discussed we have to apply the pressure correction formula several times, the complete algorithm is: \cite{MAC}
 \paragraph{1) Initialize \(u^n\), \(v^n\), \(w^n\) and \(p^n\)} The pressure will depend on the x-coordinate due to gravity, we will write a formula to determine the initial pressure.
 \paragraph{2) Predict \(\tilde{u}\), \(\tilde{v}\) and \(\tilde{w}\)} Store the results of equation \ref{velocity tilde} in new arrays, we still want to keep the last timestep velocities. 
 \paragraph{3) Update boundary conditions} Implement the boundary conditions discussed in \ref{Boundary conditions and walls}.
 \paragraph{4) Calculate pressure correction(p')} Store the pressure correction obtained from equation \ref{pressure correction formula} in a new array.
 \paragraph{5) Update velocities to the velocities of the next timestep} Use equation \ref{next timestep velocities} to calculate the next timestep velocities. The results can be stored in the grids from step 2, because the those results are not needed anymore.
 \paragraph{6) Update boundary conditions again} The boundary conditions from \ref{Boundary conditions and walls} need to be applied on the new velocity grids.
-\paragraph{7) Check convergence} Check whether the continuity equatio(the upper equation of \ref{NSE incompressible}) is satisfied. If it is satisfied enough, set the velocity grids created in step 1 to the velocity grids of step 5. Also, add the pressure correction grid to the pressure grid. It is now possible to go to the next timestep. If it has not converged, only add the pressure correction grid to the pressure grid and go back to step 2. The continuity equation should converge to zero after doing steps 2 till 7 multiple times. 
+\paragraph{7) Check convergence} Check whether the continuity equation (the upper equation of \ref{NSE incompressible}) is satisfied. If it is satisfied enough, set the velocity grids created in step 1 to the velocity grids of step 5. Also, add the pressure correction grid to the pressure grid. It is now possible to go to the next timestep. If it has not converged, only add the pressure correction grid to the pressure grid and go back to step 2. The continuity equation should converge to zero after doing steps 2 till 7 multiple times. 
 
 
 \subsection{The code}
@@ -606,7 +616,7 @@ let mut pressure_grid: [[[f32; PRESSUREGRIDSIZE[2]]; PRESSUREGRIDSIZE[1]]; PRESS
     let mut velocity_z = VelocityGrid{grid: vec![vec![vec![0.0;PRESSUREGRIDSIZE[2]+1]; PRESSUREGRIDSIZE[1]+2]; PRESSUREGRIDSIZE[0]+2], dimension:2}; 
     
 \end{lstlisting}
-Here the pressure is set to zero, which it should not be, since there is no vacuum. To determine the initial pressure we need to take gravity in account. The mass of fluid layers above a certain layer will exercise pressure on that layer. The pressure can be determined using the following formula:
+Here the pressure is set to zero, which it should not be, since there is no vacuum. To determine the initial pressure we need to take gravity into account. The mass of fluid layers above a certain layer will exercise pressure on that layer. The pressure can be determined using the following formula:
 \[
 \begin{split}
 p(h)&=\frac{F}{A}=\frac{F_{atmospheric}+F_{g,water}}{A}
@@ -658,7 +668,7 @@ fn predict_velocity(provisonal_velocity_field: &mut VelocityGrid, velocity_field
 The function above stores the provisional velocities obtained from equation \ref{velocity tilde} in provisional\_velocity\_field, which is a seperate grid. The diffusion term is calculated as in chapter \ref{diffusion term}.
 
 \paragraph{3) Update boundary conditions}
-Ideally, the user can set the boundary conditions themselves. Although this is currently possible, it requires the user to program themselves quite a lot. We will create a few functions the user can use to set the boundary conditions. 
+Ideally, the user can set the boundary conditions themselves. Although this is currently possible, it requires the user to perform quite a lot of programming work themselves. We will create a few functions the user can use to set the boundary conditions. 
 \\ \\
 We will enforce a no-slip boundary condition at the wall as we have discussed in section \ref{Boundary conditions and walls}. We will first create a function that will enforce that boundary condition in the orthogonal direction. 
 \begin{lstlisting}[language=Rust, style=boxed, breaklines=true]
@@ -673,8 +683,7 @@ fn set_orthogonal_boundary_condition_at_wall(orthogonal_velocity_grid: &mut Velo
     }
 }
 \end{lstlisting}
-
-This function will set the orthogonal boundary condition for a rectangular wall with given minimum and maximum coords. As one can see, we have use ..= instead of .. in the for loops. We have done this because we also want to set the boundary condition at the maximum coordinates(max\_coords). This way, the boundary condition will also be set when one component of the minimum coordinates is equal to the same  component of the maximum coordinates. The user can choose the variable value, so that he or she can create inflows and outflows by setting it to a nonzero value. When value is zero there is no flow.
+This function will set the orthogonal boundary condition for a rectangular wall with given minimum and maximum coordinates. As one can see, we have use ..= instead of .. in the for loops. We have done this because we also want to set the boundary condition at the maximum coordinates. This way, the boundary condition will also be set when one component of the minimum coordinates is equal to the same  component of the maximum coordinates. The user can choose the variable value, so that he or she can create inflows and outflows by setting it to a nonzero value. When value is zero there is no flow.
 \\ \\
 We also have to enforce the boundary values in the directions parallel to the wall, again using the formulas from section \ref{Boundary conditions and walls}. This is a little bit trickier, because we have to use neighboring points. The user will have to specify whether the given points are on the side of the wall with lower coordinates or higher coordinates.
 \begin{lstlisting}[language=Rust, style=boxed, breaklines=true]
@@ -721,7 +730,7 @@ fn set_boundary_conditions_of_two_parallel_walls(orthogonal_velocity_grid: &mut 
 
 }
 \end{lstlisting}
-We would like to implement more options for modifying boundary conditions in the future, for now it is beyond the scope of our project.
+We would like to implement more options for modifying boundary conditions in the future, Unfortunately, this is beyond the scope of this project.
 
 \paragraph{4) Calculate pressure correction(p')}
 
@@ -760,7 +769,7 @@ fn update_velocity_field(velocity_field: &mut VelocityGrid, pressure_correction 
 \paragraph{6) Update boundary conditions again}
 This is the same as step 3, it is important that the same boundary conditions are enforced
 \paragraph{7) Check convergence}
-The velocities should satisfy the continuity equation(the upper equation of \ref{NSE incompressible}). As we have seen the discretised version of the continuity equation is \ref{continuity discretised}. Because we have discretised the equations, the continuity equation will not be completely satisfied. However, after each pressure correction the continuity equation should converge to zero a little more. We will stop correcting the pressure when the error is smaller than the constant ALLOWEDERROR. Calculating the error is very easy, since it is just the sum of the derivatives of the velocities in their own direction. We will calulate the derivatives for a pressure point and use central derivatives, so that all three derivatives are calculable. So we first need to define that derivative:
+The velocities should satisfy the continuity equation (the upper equation of \ref{NSE incompressible}). As we have seen the discretised version of the continuity equation is \ref{continuity discretised}. Because we have discretised the equations, the continuity equation will not be completely satisfied. However, after each pressure correction the continuity equation should converge to zero a little more. We will stop correcting the pressure when the error is smaller than the constant ALLOWEDERROR. Calculating the error is very easy, since it is just the sum of the derivatives of the velocities in their own direction. We will calulate the derivatives for a pressure point and use central derivatives, so that all three derivatives are calculable. So we first need to define that derivative:
 
 \begin{lstlisting}[language=Rust, style=boxed, breaklines=true]
 fn first_order_central_spatial_derivative(f: &VelocityGrid, x: usize, y: usize, z:usize)->f32{//practically identical to first_order_forward_spatial_derivative, but for clarity we keep it.
@@ -799,7 +808,7 @@ fn get_velocity_at_pressure_point(velocity_grid: &VelocityGrid, x: usize, y: usi
     return velocity_grid.grid[x+1][y+1][x+1]-velocity_grid.grid[x+1-dim[0]][y+1-dim[1]][z+1-dim[2]];//Just take the average
 }
 \end{lstlisting}
-This function just takes the average of the two nearest velocity points. Using this function we can get all velocity components at every pressure point. However, if we will visualise all velocity components of a large grid we will show so much data that one can not interpret it well. Therefore, we want to be able to scale down the resolution. We will do that using the following function:
+This function just takes the average of the two nearest velocity points. Using this function we can get all velocity components at every pressure point. However, if we visualise all velocity components of a large grid we will show so much data that one can not interpret it well. Therefore, we want to be able to scale down the resolution. We will do that using the following function:
 \begin{lstlisting}[language=Rust, style=boxed, breaklines=true]
 //Calculates the interval between the velocities that should be shown in one dimension
 fn calc_step_size(from_dimension: usize, to_dimension: usize)->usize{
@@ -827,28 +836,86 @@ pub fn convert_velocities_to_collocated_grid_and_visualise(min_coords: [usize; 3
 \end{lstlisting}
 
 \subsubsection{Putting it all together}
-Using the functions from previous chapters, we can finally create a function for one timestep
+Using the functions from previous chapters, we can finally create a function for one timestep:
+\begin{lstlisting}[language=Rust, style=boxed, breaklines=true]
+fn simulation_time_step(velocity_grid_x: &mut VelocityGrid, velocity_grid_y: &mut VelocityGrid, velocity_grid_z: &mut VelocityGrid,  pressure_grid: &mut [[[f32; PRESSUREGRIDSIZE[2]];PRESSUREGRIDSIZE[1]];PRESSUREGRIDSIZE[0]], time_step: i32) -> Vec<Vec<Vec<[f32;3]>>>{
+    let i:&mut i32=&mut 0;
+    while *i<MAXITERATIONSPERTIMEFRAME {
+        //1) Predict u, v and w,
+        let mut provisional_velocity_x = VelocityGrid{grid: vec![vec![vec![0.0;PRESSUREGRIDSIZE[2]+2]; PRESSUREGRIDSIZE[1]+2]; PRESSUREGRIDSIZE[0]+1], dimension:0};
+        let mut provisional_velocity_y = VelocityGrid{grid: vec![vec![vec![0.0;PRESSUREGRIDSIZE[2]+2]; PRESSUREGRIDSIZE[1]+1]; PRESSUREGRIDSIZE[0]+2], dimension:1}; 
+        let mut provisional_velocity_z = VelocityGrid{grid: vec![vec![vec![0.0;PRESSUREGRIDSIZE[2]+1]; PRESSUREGRIDSIZE[1]+2]; PRESSUREGRIDSIZE[0]+2], dimension:2}; 
+    
+        //x-velocity
+        predict_velocity(&mut provisional_velocity_x, &velocity_grid_x, &velocity_grid_y, &velocity_grid_z, *pressure_grid);
+        //y-velocity
+        predict_velocity(&mut provisional_velocity_y, &velocity_grid_y, &velocity_grid_x, &velocity_grid_z, *pressure_grid);
+        //z-velocity
+        predict_velocity(&mut provisional_velocity_z, &velocity_grid_z, &velocity_grid_x, &velocity_grid_y, *pressure_grid);
+        
+        //2)Update boundary conditions(i.e. set walls)
+        set_wall_boundary_conditions( &mut provisional_velocity_x,  &mut provisional_velocity_y,  &mut provisional_velocity_z, 1.0, time_step);
+
+        //3)Calculate pressure correction
+        let mut pressure_correction: [[[f32; PRESSUREGRIDSIZE[2]]; PRESSUREGRIDSIZE[1]]; PRESSUREGRIDSIZE[0]]=calculate_pressure_correction(&provisional_velocity_x, &provisional_velocity_y, &provisional_velocity_z);
+    
+
+        //4)Update u and v
+        update_velocity_field(&mut provisional_velocity_x, &pressure_correction);
+        update_velocity_field(&mut provisional_velocity_y, &pressure_correction);
+        update_velocity_field(&mut provisional_velocity_z, &pressure_correction);
+        
+        //5)Update boundary values
+        set_wall_boundary_conditions( &mut provisional_velocity_x,  &mut provisional_velocity_y,  &mut provisional_velocity_z, 1.0, time_step);
+        
+        //6)Check convergence
+        if check_convergence(&provisional_velocity_x, &provisional_velocity_y, &provisional_velocity_z) {// If the continuity equation has converged we can go to the next timestep
+            velocity_grid_x.grid=provisional_velocity_x.grid.clone();
+            velocity_grid_y.grid=provisional_velocity_y.grid.clone();
+            velocity_grid_z.grid=provisional_velocity_z.grid.clone();
+            *i=MAXITERATIONSPERTIMEFRAME;
+        }else{
+            println!{"convergence has not yet been reached, trying again, iteration: {}", i};
+            if *i+1==MAXITERATIONSPERTIMEFRAME{//If the continuity equation has not converged after many iterations something probably went wrong. Therefore the program will have to be terminated then.
+                println!("Last iteration {} did not converge", i);
+                std::process::exit(1);
+            }
+            
+        }
+        *i=*i+1;
+        println!("i is {}", i);
+        //7) Update pressure
+        update_pressure(pressure_grid, &pressure_correction);
+    }  
+    println!("Finished! At (2,2,2) velocity is ({}, {}, {})",velocity_grid_x.grid[2][2][2], velocity_grid_y.grid[2][2][2],velocity_grid_z.grid[2][2][2]);
+    return convert_velocities_to_collocated_grid_and_visualise([1,1,1], [PRESSUREGRIDSIZE[0]-1, PRESSUREGRIDSIZE[1]-1, PRESSUREGRIDSIZE[2]-1], [4,4,4], velocity_grid_x, velocity_grid_y, velocity_grid_z);
+}
+\end{lstlisting}
+The renderer will then show these results, thereafter we can move to the next timestep.
+
+
+
 
 
 
 
 
 \newpage  
-\section{Visualisation}
+\section{Visualisation} \label{Visualisation}
 \subsection{Drawing}
-The way we decided to show the movement of the fluids is by drawing arrows in a space of three dimensions. We do this by first loading in the arrow from an OBJ file. and OBJ file is the simplest way of storing three dimensional objects. We define the center of the arrow as (0,0,0). This makes rotation and translation easier. We also make sure that by default the arrow position is up, giving us the vector $\vec{v}=(0,0,1)$. We then create multiple instances of that arrow which we multiply with a quaternion that is the cross product of the desired rotation and the neutral rotation and we set the scalar equal to the distance between the endpoints of the vectors with the origin as a starting point. finally we transform the arrow by a vector $\vec{x}=(x,y,z)$, giving us the following transformation: 
+The way we decided to show the movement of the fluids is by drawing arrows in a space of three dimensions. We do this by first loading in the arrow from an OBJ file. An OBJ file is the simplest way of storing three dimensional objects. We define the center of the arrow as (0,0,0). This makes rotation and translation easier. We also make sure that by default the arrow position is up, giving us the vector $\vec{v}=(0,0,1)$. We then create multiple instances of that arrow which we multiply with a quaternion that is the cross product of the desired rotation and the neutral rotation and we set the scalar equal to the distance between the endpoints of the vectors with the origin as a starting point. finally we transform the arrow by a vector $\vec{x}=(x,y,z)$, giving us the following transformation: 
 $\begin{bmatrix}
 1 & 0 & 0 & 0\\
 0 & 1 & 0 & 0\\
 0 & 0 & 1 & 0\\
 x & y & z & 1
-\end{bmatrix}$. Due to the z-component in compute graphics being defined as the distance from the screen and the height as the y-component, we also need to switch the z and y-components.$\begin{bmatrix}
+\end{bmatrix}$. Due to the z-component in computer graphics being defined as the distance from the screen and the height as the y-component, we also need to switch the z and y-components.$\begin{bmatrix}
 1 & 0 & 0 & 0\\
 0 & 0 & 1 & 0\\
 0 & 1 & 0 & 0\\
 x & y & z & 1
 \end{bmatrix}$
-The finally multiplication matrix then becomes: 
+The final multiplication matrix then becomes: 
 $\begin{bmatrix}
 
 d & 0 & y & -x\\
@@ -859,13 +926,22 @@ xd-zy+x & yd -zx - y & 2xy + zd & -x^2 + y^2 + d
 \end{bmatrix}$
 where $d = ||\vec{x}-\vec{v}||$.\cite{Quaternion rotation}
 \subsection{Data capturing}
-In order to actually show the data, we need to draw the arrows by defining the vertices that make up the arrows. We then multiply it with the transformation matrix from the previous chapter and finally with a standard camera matrix. \cite{mvp} Then to get the final image we create a lot of instances of that arrow that are rotated and translated with the transformation matrix of the previous chapter. \label{Drawing} We finally define a grid by drawing lines with a start and endpoint multiplied with the camera matrix giving us something like this:
+In order to actually show the data, we need to draw the arrows by defining the vertices that make up the arrows. We then multiply it with the transformation matrix from the previous chapter and finally with a standard camera matrix. \cite{mvp} Then to get the final image we create a lot of instances of that arrow which are rotated and translated with the transformation matrix of the previous chapter. \label{Drawing} We finally define a grid by drawing lines with a start and endpoint multiplied with the camera matrix.
 %TODO: add image
 
 \newpage
-\section{Conclusion}
-
-
+\section{Conclusion} \label{Conclusion}
+\subsection{Results}
+The final result looks something like this:
+\begin{figure}[h]
+\includegraphics[width=\textwidth]{result1}
+\centering
+\caption{The situation after a few timesteps with inflow and outflow}
+\end{figure}
+\\ \\
+We were quite content with this result despite the fact that it was not perfect. We had a reasonably well working simulation albeit with some limitations and speed issues. When simulating a relatively small grid, it worked quite well but when using a larger grid, things started to get pretty slow. To work around this issue we decided to only use relatively small grids to test the simulation.
+\subsection{Discussion}
+Although we have a working prototype, it is really just that, a prototype. The simulation works but there is a slight deviation in the continuity equation that increases slightly every timestep. The rendering part is also nowhere near perfect, the arrows are sometimes a bit hard to see and the camera is quite limited. But the worst issues are most definitively performance and memory usage, simulating a small grid is not really an issue but when you go over 50 x 50 x 50 you can expect to wait up to a minute per timestep on even a reasonably fast system. This can be reduced significantly by increasing the maximum allowed deviation but this of course comes at the cost of accuracy. Another issue is memory usage, each point in the grid requires the velocity and pressure to be stored requiring 4 numbers of each 4 bytes in size which means the amount of memory required in a square grid is $16*size^3$ which means a grid of $1000^3$ uses 16Gb in the ideal case. In reality, temporary variables, the rendering and overhead increase this number even more. If we had more time for this project we would have implemented more discretization methods and in the ideal case we would have used something like Vulkan compute or CUDA to perform many calculations in parallel instead of in series. Furthermore, we would have liked to give users options to set and edit boundary conditions. Currently, the only way to do this is by changing the boundary condition function itself, which requires that one recompiles the code.
 \newpage
 %Eind PWS, start bronnenlijst
 \begin{thebibliography}{3}
@@ -939,5 +1015,9 @@ https://vulkan-tutorial.com/
 \url{https://stackoverflow.com/questions/1171849/finding-quaternion-representing-the-rotation-from-one-vector-to-another}
 \bibitem{mvp}
 \url{https://www.youtube.com/watch?v=x_Ph2cuEWrE}
+\bibitem{Millenium Problems}
+\url{https://www.claymath.org/millennium-problems}
+\bibitem{Rust}
+\url{https://www.rust-lang.org/}
 \end{thebibliography}
 \end{document}

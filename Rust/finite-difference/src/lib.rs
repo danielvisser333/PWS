@@ -5,13 +5,12 @@ use std::vec;
 use renderer::{Renderer, RenderResult};
 
 //Physical constants
-const GRIDELEMENTSCALE: f32 = 0.005;//The size of a grid element in meters(denoted in equations as delta x)
+const GRIDELEMENTSCALE: f32 = 0.05;//The size of a grid element in meters(denoted in equations as delta x)
 const TIMESTEPSIZE: f32 = 0.0005;//The size of a time step size in seconds
 const DENSITY: f32 = 997.0;//Density of the liquid in kg/m^{3}. We simulate water.
 const EXTERNALFORCE : [f32; 3] = [0.0,0.0, 0.0];//Gravity in N
 const VISCOSITY: f32 = 0.001;//Viscosity in Pa*s.
 const ATMOSPHERIC_PRESSURE: f32=101325.0;//101 325;//Atmospheric pressure in Pa
-
 const MAXITERATIONSPERTIMEFRAME:i32=2000;//This constant sets a maximum so the computer can not get in an infinite loop.
 const RELEXATION: f32=1.0;//Pressure correction is often underestimated, this factor should be between 1.4 and 1.8.
 const ALLOWEDERROR: f32=0.005; 
@@ -27,24 +26,23 @@ pub struct VelocityGrid{
 }
 
 pub fn initialize_simulation(){
-    
-    //let renderer = Renderer::new(false);
+    let renderer = Renderer::new(false);
     let mut pressure_grid: Box<[[[f32; PRESSUREGRIDSIZE[2]]; PRESSUREGRIDSIZE[1]]; PRESSUREGRIDSIZE[0]]>= box[[[0.0; PRESSUREGRIDSIZE[2]]; PRESSUREGRIDSIZE[1]]; PRESSUREGRIDSIZE[0]];//pressureGrid[x][y][z] is the pressure at coordinates (x,y,z)
     let mut velocity_x = box VelocityGrid{grid: vec![vec![vec![0.0;PRESSUREGRIDSIZE[2]+2]; PRESSUREGRIDSIZE[1]+2]; PRESSUREGRIDSIZE[0]+1], dimension:0};// z,y,x !!!
     let mut velocity_y = box VelocityGrid{grid: vec![vec![vec![0.0;PRESSUREGRIDSIZE[2]+2]; PRESSUREGRIDSIZE[1]+1]; PRESSUREGRIDSIZE[0]+2], dimension:1}; 
     let mut velocity_z = box VelocityGrid{grid: vec![vec![vec![0.0;PRESSUREGRIDSIZE[2]+1]; PRESSUREGRIDSIZE[1]+2]; PRESSUREGRIDSIZE[0]+2], dimension:2}; 
     
     initialize_pressure_grid(&mut pressure_grid);
-    //let mut i: i32=0;
-    //loop{
-    for i in 0..500{
+    let mut i: i32=0;
+    loop{
+    //for i in 0..500{
         let render_data = simulation_time_step(&mut velocity_x, &mut velocity_y, &mut velocity_z, &mut pressure_grid, i);
-        //renderer.transform_grid(render_data);
-        //match renderer.await_request(){
-        //  RenderResult::NextStep => {}
-        //   RenderResult::Shutdown=>{return}
-        //};
-    //i=i+1;
+        renderer.transform_grid(render_data);
+        match renderer.await_request(){
+          RenderResult::NextStep => {}
+           RenderResult::Shutdown=>{return}
+        };
+        i=i+1;
     }
     println!("Simulation finished");
 }
@@ -95,9 +93,12 @@ fn simulation_time_step(velocity_grid_x: &mut Box<VelocityGrid>, velocity_grid_y
             velocity_grid_x.grid=provisional_velocity_x.grid.clone();
             velocity_grid_y.grid=provisional_velocity_y.grid.clone();
             velocity_grid_z.grid=provisional_velocity_z.grid.clone();
+            println!("Finished in {} steps, inflow is {}", i,some_sigmoid_function(time_step));
+            println!("Pressure at (8,8,1) is {} on timestep {}", pressure_grid[8][8][1], time_step);    
             *i=MAXITERATIONSPERTIMEFRAME;
         }else{
-            println!{"convergence has not yet been reached, trying again, iteration: {}, timestep: {}", i, time_step};
+            //println!{"convergence has not yet been reached, trying again, iteration: {}, timestep {}", i, time_step};
+            //println!{"Pressure {} correction {} at (8,8,1)", pressure_grid[8][8][1], pressure_correction[8][8][1]};
             if *i+1==MAXITERATIONSPERTIMEFRAME{//If the continuity equation has not converged after many iterations something probably went wrong. Therefore the program will have to be terminated then.
                 println!("Last iteration {} did not converge", i);
                 std::process::exit(1);
@@ -105,12 +106,11 @@ fn simulation_time_step(velocity_grid_x: &mut Box<VelocityGrid>, velocity_grid_y
             
         }
         *i=*i+1;
-        println!("i is {}", i);
+        //println!("i is {}", i);
         //7) Update pressure
         update_pressure(pressure_grid, &pressure_correction);
     }  
-    println!("Finished! At (2,2,2) velocity is ({}, {}, {})",velocity_grid_x.grid[2][2][2], velocity_grid_y.grid[2][2][2],velocity_grid_z.grid[2][2][2]);
-    return convert_velocities_to_collocated_grid_and_visualise([1,1,1], [PRESSUREGRIDSIZE[0]-1, PRESSUREGRIDSIZE[1]-1, PRESSUREGRIDSIZE[2]-1], [4,4,4], velocity_grid_x, velocity_grid_y, velocity_grid_z);
+    return convert_velocities_to_collocated_grid_and_visualise([0,4,0], [PRESSUREGRIDSIZE[0]-1, 4, PRESSUREGRIDSIZE[2]-1], [9,1,9], velocity_grid_x, velocity_grid_y, velocity_grid_z);
 }
 
 //min_coords and max_coords are the pressure coordinates of which we want to know the velocities(this function will determine those velocities by taking the average of nearby velocities)
@@ -203,7 +203,7 @@ fn check_convergence(provisional_velocity_x:&VelocityGrid, provisional_velocity_
             for z in 1..PRESSUREGRIDSIZE[2]-1{
                 let error=check_convergence_at_point(provisional_velocity_x, provisional_velocity_y, provisional_velocity_z, x, y, z);   
                 if error.abs()>ALLOWEDERROR{
-                    println!("Convergence not yet reached, error is {} at ({}, {}, {})", error, x, y, z );
+                    //println!("Convergence not yet reached, error is {} at ({}, {}, {})", error, x, y, z );
                     return false;
 
                 }
@@ -218,13 +218,13 @@ fn set_wall_boundary_conditions(velocity_grid_x: &mut VelocityGrid, velocity_gri
     set_boundary_conditions_of_two_parallel_walls(velocity_grid_x, velocity_grid_y, velocity_grid_z, 0.0);
     set_boundary_conditions_of_two_parallel_walls(velocity_grid_y, velocity_grid_x, velocity_grid_z, 0.0);
     set_boundary_conditions_of_two_parallel_walls(velocity_grid_z, velocity_grid_x, velocity_grid_y, 0.0);
-    create_inflow_or_outflow(velocity_grid_x, velocity_grid_y, velocity_grid_z, [0,2,2], [0,3,3], some_sigmoid_function(time_step));
-    create_inflow_or_outflow(velocity_grid_x, velocity_grid_y, velocity_grid_z, [PRESSUREGRIDSIZE[0],2,2], [PRESSUREGRIDSIZE[0],3,3], some_sigmoid_function(time_step));
+    create_inflow_or_outflow(velocity_grid_x, velocity_grid_y, velocity_grid_z, [0,2,2], [0,6,6], -some_sigmoid_function(time_step));
+    create_inflow_or_outflow(velocity_grid_z, velocity_grid_y, velocity_grid_x, [2,2,0], [6,6,0], some_sigmoid_function(time_step));
 } 
 
 fn some_sigmoid_function(time_step: i32)->f32{
     let t=time_step as f32;
-    return 1.0/(f32::powf(2.7182818, 3.0-t)+1.0);
+    return 0.1;//1.0/(f32::powf(2.7182818, 3.0-t)+1.0);
 }
 
 fn set_boundary_conditions_of_two_parallel_walls(orthogonal_velocity_grid: &mut VelocityGrid, parallel_velocity_grid_a: &mut VelocityGrid, parallel_velocity_grid_b: &mut VelocityGrid, orthogonal_velocity_grid_value: f32){
@@ -322,7 +322,7 @@ fn second_order_spatial_derivative(f:&VelocityGrid, x: usize, y:usize, z:usize, 
 
 fn second_order_second_spatial_derivative(f: &VelocityGrid, x:usize, y:usize, z:usize, dimension_number:usize) -> f32{
     let dim = get_dimension(dimension_number);
-    return(f.grid[x+dim[0]][y+dim[1]][z+dim[2]]-2.0*f.grid[x][y][z]+f.grid[x-dim[0]][y-dim[1]][z-dim[2]])/(GRIDELEMENTSCALE*GRIDELEMENTSCALE);
+    return (f.grid[x+dim[0]][y+dim[1]][z+dim[2]]-2.0*f.grid[x][y][z]+f.grid[x-dim[0]][y-dim[1]][z-dim[2]])/(GRIDELEMENTSCALE*GRIDELEMENTSCALE);
 }
 
 //Laplacian velocity grid
