@@ -347,17 +347,17 @@ impl Drop for RenderOnThread{
     }
 }
 ///Convert the grid to the corresponding transformation matrices
-pub fn grid_to_matrices(grid : Vec<Vec<Vec<[f32;3]>>>) -> Vec<ModelMatrix>{
+pub fn grid_to_matrices(grid : Vec<Vec<Vec<([f32;3],[f32;3])>>>) -> Vec<ModelMatrix>{
     let mut matrices = vec!();
 
     for x in 0..grid.len(){
         for y in 0..grid[x].len(){
             for z in 0..grid[x][y].len(){
                 let point = Vector3::new((x as f32+0.5)/grid.len() as f32 - 0.5,(y as f32+0.5)/grid.len() as f32 - 0.5,(z as f32+0.5)/grid.len() as f32 - 0.5);
-                let vector = Vector3::new(grid[x][y][z][0], grid[x][y][z][1], grid[x][y][z][2]).normalize();
+                let vector = Vector3::new(grid[x][y][z].0[0], grid[x][y][z].0[1], grid[x][y][z].0[2]).normalize();
                 //let vector = Vector3::new(0.0, 1.0, 0.0);
                 //println!("{:?}",vector);
-                println!("{},{},{}",grid[x][y][z][0], grid[x][y][z][1], grid[x][y][z][2]);
+                //println!("{},{},{}",grid[x][y][z][0], grid[x][y][z][1], grid[x][y][z][2]);
                 let mut translation = Matrix4::from_translation(point);
                 //TODO: Rotate arrow to point to vector
                 let cross = NEUTRAL_ARROW_VECTOR.cross(vector);
@@ -368,7 +368,7 @@ pub fn grid_to_matrices(grid : Vec<Vec<Vec<[f32;3]>>>) -> Vec<ModelMatrix>{
                 translation = translation*Matrix4::from(quat);
                 translation.swap_columns(1, 2);
                 translation*=vector.magnitude2();
-                matrices.push(ModelMatrix{matrix:translation});
+                matrices.push(ModelMatrix{matrix:translation,color:grid[x][y][z].1});
             }
         }
     }

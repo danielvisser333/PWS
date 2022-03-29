@@ -7,18 +7,18 @@ use tobj::LoadOptions;
 
 pub struct ModelMatrix{
     pub matrix : Matrix4<f32>,
+    pub color : [f32;3],
 }
 impl ModelMatrix{
     pub fn get_default() -> Vec<Self>{
         return vec!(
-            Self{matrix:Matrix4::identity()},
+            Self{matrix:Matrix4::identity(),color:[0.0,0.0,0.0]},
         );
     }
 }
 #[derive(Clone, Copy, Debug)]
 pub struct InstanceVertex{
     pub pos : [f32;3],
-    pub color : [f32;3],
 }
 impl InstanceVertex{
     pub fn get_bindings() -> Vec<VertexInputBindingDescription>{
@@ -44,12 +44,6 @@ impl InstanceVertex{
                 offset : offset_of!(Self,pos) as u32,
             },
             VertexInputAttributeDescription{
-                binding : 0,
-                format : Format::R32G32B32_SFLOAT,
-                location : 1,
-                offset : offset_of!(Self,color) as u32,
-            },
-            VertexInputAttributeDescription{
                 binding : 1,
                 format : Format::R32G32B32A32_SFLOAT,
                 location : 2,
@@ -73,6 +67,12 @@ impl InstanceVertex{
                 location : 5,
                 offset : 3 * std::mem::size_of::<Vector4<f32>>() as u32,
             },
+            VertexInputAttributeDescription{
+                binding : 1,
+                format : Format::R32G32B32_SFLOAT,
+                location : 6,
+                offset : 4 * std::mem::size_of::<Vector4<f32>>() as u32,
+            }
         );
     }
     pub fn get_initial_vertex_data() -> Vec<(Vec<Self>,Vec<u32>)>{
@@ -89,11 +89,6 @@ impl InstanceVertex{
                         model.mesh.positions[i*3]/50.0,
                         model.mesh.positions[i*3+1]/50.0,
                         model.mesh.positions[i*3+2]/50.0],
-                    color : [
-                        0.0,
-                        0.0,
-                        0.0
-                        ],
                 };
                 vertices.push(vertex);
             }
