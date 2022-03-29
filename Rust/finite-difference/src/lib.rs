@@ -57,7 +57,7 @@ fn initialize_pressure_grid(pressure_grid: &mut [[[f32; PRESSUREGRIDSIZE[2]];PRE
     }
 }
 
-fn simulation_time_step(velocity_grid_x: &mut Box<VelocityGrid>, velocity_grid_y: &mut Box<VelocityGrid>, velocity_grid_z: &mut Box<VelocityGrid>,  pressure_grid: &mut Box<[[[f32; PRESSUREGRIDSIZE[2]];PRESSUREGRIDSIZE[1]];PRESSUREGRIDSIZE[0]]>, time_step: i32) -> Vec<Vec<Vec<[f32;3]>>>{
+fn simulation_time_step(velocity_grid_x: &mut Box<VelocityGrid>, velocity_grid_y: &mut Box<VelocityGrid>, velocity_grid_z: &mut Box<VelocityGrid>,  pressure_grid: &mut Box<[[[f32; PRESSUREGRIDSIZE[2]];PRESSUREGRIDSIZE[1]];PRESSUREGRIDSIZE[0]]>, time_step: i32) -> Vec<Vec<Vec<([f32;3],[f32;3])>>>{
     let i:&mut i32=&mut 0;
     while *i<MAXITERATIONSPERTIMEFRAME {
         //let direction_has_changed=false;
@@ -115,13 +115,13 @@ fn simulation_time_step(velocity_grid_x: &mut Box<VelocityGrid>, velocity_grid_y
 
 //min_coords and max_coords are the pressure coordinates of which we want to know the velocities(this function will determine those velocities by taking the average of nearby velocities)
 //data_grid_point_size is the size of the grid we want to show to the user
-pub fn convert_velocities_to_collocated_grid_and_visualise(min_coords: [usize; 3], max_coords: [usize;3], data_grid_point_size: [usize; 3], velocity_grid_x: &VelocityGrid, velocity_grid_y: &VelocityGrid, velocity_grid_z: &VelocityGrid) -> Vec<Vec<Vec<[f32;3]>>>{
+pub fn convert_velocities_to_collocated_grid_and_visualise(min_coords: [usize; 3], max_coords: [usize;3], data_grid_point_size: [usize; 3], velocity_grid_x: &VelocityGrid, velocity_grid_y: &VelocityGrid, velocity_grid_z: &VelocityGrid) -> Vec<Vec<Vec<([f32;3],[f32;3])>>>{
     let step_size=[calc_step_size(max_coords[0]-min_coords[0], data_grid_point_size[0]), calc_step_size(max_coords[1]-min_coords[1], data_grid_point_size[1]), calc_step_size(max_coords[2]-min_coords[2], data_grid_point_size[2])];
-    let mut return_data: Vec<Vec<Vec<[f32; 3]>>>=vec![vec![vec![[0.0; 3]; data_grid_point_size[0]]; data_grid_point_size[1]]; data_grid_point_size[0]];
+    let mut return_data: Vec<Vec<Vec<([f32; 3],[f32;3])>>>=vec![vec![vec![([0.0; 3],[0.0,0.0,0.0]); data_grid_point_size[0]]; data_grid_point_size[1]]; data_grid_point_size[0]];
     for x in 0..data_grid_point_size[0]{
         for y in 0..data_grid_point_size[1]{
             for z in 0..data_grid_point_size[2]{
-                return_data[x][y][z]=[get_velocity_at_pressure_point(&velocity_grid_x, x*step_size[0], y*step_size[1], z*step_size[2]),  get_velocity_at_pressure_point(&velocity_grid_y, x*step_size[0], y*step_size[1], z*step_size[2]), get_velocity_at_pressure_point(&velocity_grid_z, x*step_size[0], y*step_size[1], z*step_size[2])];
+                return_data[x][y][z]=([get_velocity_at_pressure_point(&velocity_grid_x, x*step_size[0], y*step_size[1], z*step_size[2]),  get_velocity_at_pressure_point(&velocity_grid_y, x*step_size[0], y*step_size[1], z*step_size[2]), get_velocity_at_pressure_point(&velocity_grid_z, x*step_size[0], y*step_size[1], z*step_size[2])], [0.0,0.0,0.0]);
             }
         }
     }

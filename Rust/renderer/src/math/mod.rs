@@ -31,7 +31,7 @@ impl InstanceVertex{
             VertexInputBindingDescription{
                 binding : 1,
                 input_rate : VertexInputRate::INSTANCE,
-                stride : std::mem::size_of::<UniformBuffer>() as u32,
+                stride : std::mem::size_of::<ModelMatrix>() as u32,
             }
         );
     }
@@ -46,31 +46,31 @@ impl InstanceVertex{
             VertexInputAttributeDescription{
                 binding : 1,
                 format : Format::R32G32B32A32_SFLOAT,
-                location : 2,
+                location : 1,
                 offset : 0,
             },
             VertexInputAttributeDescription{
                 binding : 1,
                 format : Format::R32G32B32A32_SFLOAT,
-                location : 3,
+                location : 2,
                 offset : std::mem::size_of::<Vector4<f32>>() as u32,
             },
             VertexInputAttributeDescription{
                 binding : 1,
                 format : Format::R32G32B32A32_SFLOAT,
-                location : 4,
+                location : 3,
                 offset : 2 * std::mem::size_of::<Vector4<f32>>() as u32,
             },
             VertexInputAttributeDescription{
                 binding : 1,
                 format : Format::R32G32B32A32_SFLOAT,
-                location : 5,
+                location : 4,
                 offset : 3 * std::mem::size_of::<Vector4<f32>>() as u32,
             },
             VertexInputAttributeDescription{
                 binding : 1,
                 format : Format::R32G32B32_SFLOAT,
-                location : 6,
+                location : 5,
                 offset : 4 * std::mem::size_of::<Vector4<f32>>() as u32,
             }
         );
