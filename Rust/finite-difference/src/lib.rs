@@ -6,7 +6,7 @@ use renderer::{Renderer, RenderResult};
 const GRIDELEMENTSCALE: f32 = 0.05;//The size of a grid element in meters(denoted in equations as delta x)
 const TIMESTEPSIZE: f32 = 0.0005;//The size of a time step size in seconds
 const DENSITY: f32 = 1000.0;//Density of the liquid in kg/m^{3}. We simulate water.
-const EXTERNALFORCE : [f32; 3] = [0.0,0.0, 0.0];//Gravity in N
+const EXTERNALFORCE : [f32; 3] = [0.0,0.0, -9.81];//Gravity in N
 const VISCOSITY: f32 = 0.001;//Viscosity in Pa*s.
 const ATMOSPHERIC_PRESSURE: f32=0.0;//101.325;//Atmospheric pressure in Pa
 
