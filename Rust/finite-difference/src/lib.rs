@@ -3,10 +3,10 @@ use std::vec;
 use renderer::{Renderer, RenderResult};
 
 //Physical constants
-const GRIDELEMENTSCALE: f32 = 0.005;//The size of a grid element in meters(denoted in equations as delta x)
+const GRIDELEMENTSCALE: f32 = 0.05;//The size of a grid element in meters(denoted in equations as delta x)
 const TIMESTEPSIZE: f32 = 0.0005;//The size of a time step size in seconds
 const DENSITY: f32 = 1000.0;//Density of the liquid in kg/m^{3}. We simulate water.
-const EXTERNALFORCE : [f32; 3] = [0.0,0.0, -9.81];//Gravity in N
+const EXTERNALFORCE : [f32; 3] = [0.0,0.0, 0.0];//Gravity in N
 const VISCOSITY: f32 = 0.001;//Viscosity in Pa*s.
 const ATMOSPHERIC_PRESSURE: f32=0.0;//101.325;//Atmospheric pressure in Pa
 
@@ -92,6 +92,8 @@ fn simulation_time_step(velocity_grid_x: &mut VelocityGrid, velocity_grid_y: &mu
             velocity_grid_x.grid=provisional_velocity_x.grid.clone();
             velocity_grid_y.grid=provisional_velocity_y.grid.clone();
             velocity_grid_z.grid=provisional_velocity_z.grid.clone();
+            println!("Finished in {} steps, inflow is {}", i,some_sigmoid_function(time_step));
+            println!("Pressure at (8,8,1) is {} on timestep {}", pressure_grid[8][8][1], time_step);    
             *i=MAXITERATIONSPERTIMEFRAME;
         }else{
             //println!{"convergence has not yet been reached, trying again, iteration: {}, timestep {}", i, time_step};
@@ -107,9 +109,7 @@ fn simulation_time_step(velocity_grid_x: &mut VelocityGrid, velocity_grid_y: &mu
         //7) Update pressure
         update_pressure(pressure_grid, &pressure_correction);
     }  
-    println!("Finished! At (2,2,2) velocity is ({}, {}, {})",velocity_grid_x.grid[2][2][2], velocity_grid_y.grid[2][2][2],velocity_grid_z.grid[2][2][2]);
-    println!("Pressure at (8,8,1) is {} on timestep {}", pressure_grid[8][8][1], time_step);
-    return convert_velocities_to_collocated_grid_and_visualise([1,1,1], [PRESSUREGRIDSIZE[0]-1, PRESSUREGRIDSIZE[1]-1, PRESSUREGRIDSIZE[2]-1], [4,4,4], velocity_grid_x, velocity_grid_y, velocity_grid_z);
+    return convert_velocities_to_collocated_grid_and_visualise([0,4,0], [PRESSUREGRIDSIZE[0]-1, 4, PRESSUREGRIDSIZE[2]-1], [9,1,9], velocity_grid_x, velocity_grid_y, velocity_grid_z);
 }
 
 //min_coords and max_coords are the pressure coordinates of which we want to know the velocities(this function will determine those velocities by taking the average of nearby velocities)
@@ -213,13 +213,13 @@ fn set_wall_boundary_conditions(velocity_grid_x: &mut VelocityGrid, velocity_gri
     set_boundary_conditions_of_two_parallel_walls(velocity_grid_x, velocity_grid_y, velocity_grid_z, 0.0);
     set_boundary_conditions_of_two_parallel_walls(velocity_grid_y, velocity_grid_x, velocity_grid_z, 0.0);
     set_boundary_conditions_of_two_parallel_walls(velocity_grid_z, velocity_grid_x, velocity_grid_y, 0.0);
-    create_inflow_or_outflow(velocity_grid_x, velocity_grid_y, velocity_grid_z, [0,2,2], [0,3,3], -some_sigmoid_function(time_step));
-    create_inflow_or_outflow(velocity_grid_x, velocity_grid_y, velocity_grid_z, [0,6,6], [0,8,8], some_sigmoid_function(time_step));
+    create_inflow_or_outflow(velocity_grid_x, velocity_grid_y, velocity_grid_z, [0,2,2], [0,6,6], -some_sigmoid_function(time_step));
+    create_inflow_or_outflow(velocity_grid_z, velocity_grid_y, velocity_grid_x, [2,2,0], [6,6,0], some_sigmoid_function(time_step));
 } 
 
 fn some_sigmoid_function(time_step: i32)->f32{
     let t=time_step as f32;
-    return 1.0/(f32::powf(2.7182818, 3.0-t)+1.0);
+    return 0.1;//1.0/(f32::powf(2.7182818, 3.0-t)+1.0);
 }
 
 fn set_boundary_conditions_of_two_parallel_walls(orthogonal_velocity_grid: &mut VelocityGrid, parallel_velocity_grid_a: &mut VelocityGrid, parallel_velocity_grid_b: &mut VelocityGrid, orthogonal_velocity_grid_value: f32){
