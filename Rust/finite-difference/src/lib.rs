@@ -11,14 +11,14 @@ const DENSITY: f32 = 997.0;//Density of the liquid in kg/m^{3}. We simulate wate
 const EXTERNALFORCE : [f32; 3] = [0.0,0.0, 0.0];//Gravity in N
 const VISCOSITY: f32 = 0.001;//Viscosity in Pa*s.
 const ATMOSPHERIC_PRESSURE: f32=101325.0;//101 325;//Atmospheric pressure in Pa
-const MAXITERATIONSPERTIMEFRAME:i32=2000;//This constant sets a maximum so the computer can not get in an infinite loop.
+const MAXITERATIONSPERTIMEFRAME:i32=30000;//This constant sets a maximum so the computer can not get in an infinite loop.
 const RELEXATION: f32=1.0;//Pressure correction is often underestimated, this factor should be between 1.4 and 1.8.
 const ALLOWEDERROR: f32=0.005; 
 
 //Pressure is measured in Pascal, because it is the standard SI unit for pressure.
 
 //Grid size(e.g. number of elements in each dimension)
-const PRESSUREGRIDSIZE: [usize; 3] = [10,10,10];//x,y,z
+const PRESSUREGRIDSIZE: [usize; 3] = [50,50,50];//x,y,z
 
 pub struct VelocityGrid{
     grid: Vec<Vec<Vec<f32>>>,
@@ -111,7 +111,7 @@ fn simulation_time_step(velocity_grid_x: &mut Box<VelocityGrid>, velocity_grid_y
         //7) Update pressure
         update_pressure(pressure_grid, &pressure_correction);
     }  
-    return convert_velocities_to_collocated_grid_and_visualise([4,0,0], [4, PRESSUREGRIDSIZE[1]-1, PRESSUREGRIDSIZE[2]-1], [1,9,9], velocity_grid_x, velocity_grid_y, velocity_grid_z, color_grid);
+    return convert_velocities_to_collocated_grid_and_visualise([0,4,0], [PRESSUREGRIDSIZE[1]-1, 4, PRESSUREGRIDSIZE[2]-1], [49,1,49], velocity_grid_x, velocity_grid_y, velocity_grid_z, color_grid);
 }
 
 //min_coords and max_coords are the pressure coordinates of which we want to know the velocities(this function will determine those velocities by taking the average of nearby velocities)
@@ -122,7 +122,7 @@ pub fn convert_velocities_to_collocated_grid_and_visualise(min_coords: [usize; 3
     for x in 0..data_grid_point_size[0]{
         for y in 0..data_grid_point_size[1]{
             for z in 0..data_grid_point_size[2]{
-                return_data[x][y][z]=([get_velocity_at_pressure_point(&velocity_grid_x, x*step_size[0], y*step_size[1], z*step_size[2]),  get_velocity_at_pressure_point(&velocity_grid_y, x*step_size[0], y*step_size[1], z*step_size[2]), get_velocity_at_pressure_point(&velocity_grid_z, x*step_size[0], y*step_size[1], z*step_size[2])], color_grid[x *step_size[0]][y* step_size[1]][z*step_size[2]]);
+                return_data[x][y][z]=([get_velocity_at_pressure_point(&velocity_grid_x, x*step_size[0], y*step_size[1], z*step_size[2]),  get_velocity_at_pressure_point(&velocity_grid_y, x*step_size[0], y*step_size[1], z*step_size[2]), get_velocity_at_pressure_point(&velocity_grid_z, x*step_size[0], y*step_size[1], z*step_size[2])], color_grid[x *step_size[0]+min_coords[0]][y* step_size[1]+min_coords[1]][z*step_size[2]+min_coords[2]]);
             }
         }
     }
@@ -219,8 +219,8 @@ fn set_wall_boundary_conditions(velocity_grid_x: &mut VelocityGrid, velocity_gri
     set_boundary_conditions_of_two_parallel_walls(velocity_grid_x, velocity_grid_y, velocity_grid_z, 0.0);
     set_boundary_conditions_of_two_parallel_walls(velocity_grid_y, velocity_grid_x, velocity_grid_z, 0.0);
     set_boundary_conditions_of_two_parallel_walls(velocity_grid_z, velocity_grid_x, velocity_grid_y, 0.0);
-    create_inflow_or_outflow(velocity_grid_x, velocity_grid_y, velocity_grid_z, [0,2,2], [0,6,6], some_sigmoid_function(time_step), color_grid);
-    create_inflow_or_outflow(velocity_grid_z, velocity_grid_y, velocity_grid_x, [2,2,0], [6,6,0], some_sigmoid_function(time_step), color_grid);
+    create_inflow_or_outflow(velocity_grid_x, velocity_grid_y, velocity_grid_z, [0,20,20], [0,30,30], -some_sigmoid_function(time_step), color_grid);
+    create_inflow_or_outflow(velocity_grid_z, velocity_grid_y, velocity_grid_x, [20,20,0], [30,30,0], some_sigmoid_function(time_step), color_grid);
 } 
 
 fn some_sigmoid_function(time_step: i32)->f32{
