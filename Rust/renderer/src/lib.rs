@@ -80,6 +80,12 @@ impl Renderer{
                                             ElementState::Released=>{renderer.camera.left_mouse_button_pressed = false}
                                         }
                                     }
+                                    MouseButton::Right=>{
+                                        match state{
+                                            ElementState::Pressed=>{renderer.camera.right_mouse_button_pressed = true}
+                                            ElementState::Released=>{renderer.camera.right_mouse_button_pressed = false}
+                                        }
+                                    }
                                     _=>{}
                                 }
                             }

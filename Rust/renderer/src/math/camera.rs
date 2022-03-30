@@ -15,6 +15,7 @@ pub struct Camera{
     up : Vector3<f32>,
     pub matrix : UniformBuffer,
     pub left_mouse_button_pressed : bool,
+    pub right_mouse_button_pressed : bool,
 }
 impl Camera{
     pub fn new(extent : Extent2D) -> Self{
@@ -45,6 +46,7 @@ impl Camera{
             center,
             up,
             left_mouse_button_pressed : false,
+            right_mouse_button_pressed : false,
         }
     }
     ///Ensure that the aspect ratio does not change the width of objects
@@ -83,6 +85,11 @@ impl Camera{
             let new_eye = (quat_q*quat_beta*quat_q.conjugate()).v;
             self.eye = Point3::new(new_eye.x+self.center.x, new_eye.y+self.center.y, new_eye.z+self.center.z);
             self.view = Matrix4::look_at_rh(self.eye,self.center, self.up);
+        }
+        if self.right_mouse_button_pressed{
+            let vector_between_eye_and_center = self.eye - self.center;
+            let vector_between_eye_and_center = Vector3::new(vector_between_eye_and_center.x, vector_between_eye_and_center.y, vector_between_eye_and_center.z);
+            
         }
     }
     ///Zoom in or out
