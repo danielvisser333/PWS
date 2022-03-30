@@ -1,7 +1,5 @@
 #![feature(box_syntax)]
 
-use std::vec;
-
 use renderer::{Renderer, RenderResult};
 
 //Physical constants
@@ -18,7 +16,7 @@ const ALLOWEDERROR: f32=0.005;
 //Pressure is measured in Pascal, because it is the standard SI unit for pressure.
 
 //Grid size(e.g. number of elements in each dimension)
-const PRESSUREGRIDSIZE: [usize; 3] = [50,50,50];//x,y,z
+const PRESSUREGRIDSIZE: [usize; 3] = [20,20,20];//x,y,z
 
 pub struct VelocityGrid{
     grid: Vec<Vec<Vec<f32>>>,
@@ -111,7 +109,7 @@ fn simulation_time_step(velocity_grid_x: &mut Box<VelocityGrid>, velocity_grid_y
         //7) Update pressure
         update_pressure(pressure_grid, &pressure_correction);
     }  
-    return convert_velocities_to_collocated_grid_and_visualise([0,4,0], [PRESSUREGRIDSIZE[1]-1, 4, PRESSUREGRIDSIZE[2]-1], [49,1,49], velocity_grid_x, velocity_grid_y, velocity_grid_z, color_grid);
+    return convert_velocities_to_collocated_grid_and_visualise([0,4,0], [PRESSUREGRIDSIZE[1]-1, 4, PRESSUREGRIDSIZE[2]-1], [19,1,19], velocity_grid_x, velocity_grid_y, velocity_grid_z, color_grid);
 }
 
 //min_coords and max_coords are the pressure coordinates of which we want to know the velocities(this function will determine those velocities by taking the average of nearby velocities)
@@ -119,15 +117,35 @@ fn simulation_time_step(velocity_grid_x: &mut Box<VelocityGrid>, velocity_grid_y
 pub fn convert_velocities_to_collocated_grid_and_visualise(min_coords: [usize; 3], max_coords: [usize;3], data_grid_point_size: [usize; 3], velocity_grid_x: &VelocityGrid, velocity_grid_y: &VelocityGrid, velocity_grid_z: &VelocityGrid, color_grid: Box<[[[[f32; 3]; PRESSUREGRIDSIZE[2]]; PRESSUREGRIDSIZE[1]]; PRESSUREGRIDSIZE[0]]>) -> Vec<Vec<Vec<([f32;3],[f32;3])>>>{
     let step_size=[calc_step_size(max_coords[0]-min_coords[0], data_grid_point_size[0]), calc_step_size(max_coords[1]-min_coords[1], data_grid_point_size[1]), calc_step_size(max_coords[2]-min_coords[2], data_grid_point_size[2])];
     let mut return_data: Vec<Vec<Vec<([f32; 3],[f32;3])>>>=vec![vec![vec![([0.0; 3],[0.0,0.0,0.0]); data_grid_point_size[2]]; data_grid_point_size[1]]; data_grid_point_size[0]];
+    //At first. determine the maximum current velocity
+    let mut max_vel_squared=0.0;
     for x in 0..data_grid_point_size[0]{
         for y in 0..data_grid_point_size[1]{
             for z in 0..data_grid_point_size[2]{
-                return_data[x][y][z]=([get_velocity_at_pressure_point(&velocity_grid_x, x*step_size[0], y*step_size[1], z*step_size[2]),  get_velocity_at_pressure_point(&velocity_grid_y, x*step_size[0], y*step_size[1], z*step_size[2]), get_velocity_at_pressure_point(&velocity_grid_z, x*step_size[0], y*step_size[1], z*step_size[2])], color_grid[x *step_size[0]+min_coords[0]][y* step_size[1]+min_coords[1]][z*step_size[2]+min_coords[2]]);
+                let vel_x=get_velocity_at_pressure_point(&velocity_grid_x, x*step_size[0], y*step_size[1], z*step_size[2]);
+                let vel_y=get_velocity_at_pressure_point(&velocity_grid_y, x*step_size[0], y*step_size[1], z*step_size[2]);
+                let vel_z=get_velocity_at_pressure_point(&velocity_grid_z, x*step_size[0], y*step_size[1], z*step_size[2]);
+                if(vel_x.powf(2.0)+vel_y.powf(2.0)+vel_z.powf(2.0)>max_vel_squared){
+                    max_vel_squared=vel_x.powf(2.0)+vel_y.powf(2.0)+vel_z.powf(2.0);
+                }
             }
+        }
+    }
+    
+    for x in 0..data_grid_point_size[0]{
+        for y in 0..data_grid_point_size[1]{
+            for z in 0..data_grid_point_size[2]{
+                let vel_x=get_velocity_at_pressure_point(&velocity_grid_x, x*step_size[0], y*step_size[1], z*step_size[2]);
+                let vel_y=get_velocity_at_pressure_point(&velocity_grid_y, x*step_size[0], y*step_size[1], z*step_size[2]);
+                let vel_z=get_velocity_at_pressure_point(&velocity_grid_z, x*step_size[0], y*step_size[1], z*step_size[2]);
+                return_data[x][y][z]=([vel_x,  vel_y, vel_z], [((vel_x.powf(2.0)+vel_y.powf(2.0)+vel_z.powf(2.0))/max_vel_squared).sqrt(), 0.0, 0.0]/*color_grid[x *step_size[0]+min_coords[0]][y* step_size[1]+min_coords[1]][z*step_size[2]+min_coords[2]]*/);
+                }
         }
     }
     return return_data;
 }
+
+
 
 
 //Calculates the interval between the velocities that should be shown in one dimension
@@ -219,9 +237,13 @@ fn set_wall_boundary_conditions(velocity_grid_x: &mut VelocityGrid, velocity_gri
     set_boundary_conditions_of_two_parallel_walls(velocity_grid_x, velocity_grid_y, velocity_grid_z, 0.0);
     set_boundary_conditions_of_two_parallel_walls(velocity_grid_y, velocity_grid_x, velocity_grid_z, 0.0);
     set_boundary_conditions_of_two_parallel_walls(velocity_grid_z, velocity_grid_x, velocity_grid_y, 0.0);
-    create_inflow_or_outflow(velocity_grid_x, velocity_grid_y, velocity_grid_z, [0,20,20], [0,30,30], -some_sigmoid_function(time_step), color_grid);
-    create_inflow_or_outflow(velocity_grid_z, velocity_grid_y, velocity_grid_x, [20,20,0], [30,30,0], some_sigmoid_function(time_step), color_grid);
+    create_inflow_or_outflow(velocity_grid_x, velocity_grid_y, velocity_grid_z, [0,8,8], [0,12,12], -some_sigmoid_function(time_step), color_grid);
+    create_inflow_or_outflow(velocity_grid_z, velocity_grid_y, velocity_grid_x, [8,8,0], [12,12,0], some_sigmoid_function(time_step), color_grid);
 } 
+
+fn some_sigmoid_function_f(time_step: f32)->f32{
+    return 1.0/(f32::powf(2.7182818, 3.0-time_step)+1.0);
+}
 
 fn some_sigmoid_function(time_step: i32)->f32{
     let t=time_step as f32;
