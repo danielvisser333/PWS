@@ -26,7 +26,7 @@ impl InstanceVertex{
             VertexInputBindingDescription{
                 binding : 0,
                 input_rate : VertexInputRate::VERTEX,
-                stride : std::mem::size_of::<f32>() as u32 * 6,
+                stride : std::mem::size_of::<f32>() as u32 * 3,
             },
             VertexInputBindingDescription{
                 binding : 1,
