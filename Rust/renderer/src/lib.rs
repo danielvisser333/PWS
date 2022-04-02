@@ -4,7 +4,7 @@ pub mod math;
 
 const NEUTRAL_ARROW_VECTOR : Vector3<f32> = Vector3{x:0.0,y:0.0,z:1.0};
 
-use std::{sync::mpsc::{Sender, Receiver}};
+use std::{sync::mpsc::{Sender, Receiver}, time::Instant};
 
 use allocator::{Allocator, BufferAndAllocation};
 use ash::{Entry, Instance, extensions::khr::{Surface, Swapchain}, vk::{SurfaceKHR, SwapchainKHR, ImageView, PhysicalDevice, RenderPass, ShaderModule, Framebuffer, DescriptorSetLayout, PipelineLayout, PipelineCache, DescriptorPool, DescriptorSet, Pipeline, Fence, CommandPool, Queue, CommandBuffer, PipelineStageFlags, SubmitInfo, StructureType, PresentInfoKHR, Extent2D}, Device};
@@ -37,6 +37,7 @@ impl Renderer{
             let mut event_loop : EventLoop<()> = EventLoop::new_any_thread();
             let window = Window::new(&event_loop).expect("Failed to create render window");
             let mut renderer = RenderOnThread::new(&window, debug);
+            let mut last_frame = std::time::Instant::now();
             event_loop.run_return(|event,_,control_flow|{
                 match receiver_render_thread.try_recv(){
                     Ok(task) => {
@@ -93,8 +94,11 @@ impl Renderer{
                         }
                     }
                     Event::RedrawRequested(_) => {
-                        let resized = renderer.draw();
-                        if resized{renderer.recreate_swapchain(window.inner_size());}
+                        if last_frame.elapsed().as_millis() >= 16{
+                            let resized = renderer.draw();
+                            if resized{renderer.recreate_swapchain(window.inner_size());}
+                            last_frame = Instant::now();
+                        }
                     }
                     Event::MainEventsCleared => {
                         window.request_redraw();
