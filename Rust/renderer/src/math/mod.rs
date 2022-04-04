@@ -86,9 +86,9 @@ impl InstanceVertex{
             for i in 0..vertex_count{
                 let vertex = Self{
                     pos : [
-                        model.mesh.positions[i*3]/250.0,
-                        model.mesh.positions[i*3+1]/250.0,
-                        model.mesh.positions[i*3+2]/250.0],
+                        model.mesh.positions[i*3]/100.0,
+                        model.mesh.positions[i*3+1]/100.0,
+                        model.mesh.positions[i*3+2]/100.0],
                 };
                 vertices.push(vertex);
             }
