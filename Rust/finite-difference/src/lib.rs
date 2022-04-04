@@ -4,7 +4,7 @@ use renderer::{Renderer, RenderResult};
 
 //Physical constants
 const GRIDELEMENTSCALE: f32 = 0.05;//The size of a grid element in meters(denoted in equations as delta x)
-const TIMESTEPSIZE: f32 = 0.0005;//The size of a time step size in seconds
+const TIMESTEPSIZE: f32 = 0.05;//The size of a time step size in seconds
 const DENSITY: f32 = 997.0;//Density of the liquid in kg/m^{3}. We simulate water.
 const EXTERNALFORCE : [f32; 3] = [0.0,0.0, 0.0];//Gravity in N
 const VISCOSITY: f32 = 0.001;//Viscosity in Pa*s.
@@ -16,7 +16,7 @@ const ALLOWEDERROR: f32=0.005;
 //Pressure is measured in Pascal, because it is the standard SI unit for pressure.
 
 //Grid size(e.g. number of elements in each dimension)
-const PRESSUREGRIDSIZE: [usize; 3] = [20,20,20];//x,y,z
+const PRESSUREGRIDSIZE: [usize; 3] = [50,50,50];//x,y,z
 
 pub struct VelocityGrid{
     grid: Vec<Vec<Vec<f32>>>,
@@ -57,8 +57,6 @@ fn initialize_pressure_grid(pressure_grid: &mut [[[f32; PRESSUREGRIDSIZE[2]];PRE
 
 fn simulation_time_step(velocity_grid_x: &mut Box<VelocityGrid>, velocity_grid_y: &mut Box<VelocityGrid>, velocity_grid_z: &mut Box<VelocityGrid>,  pressure_grid: &mut Box<[[[f32; PRESSUREGRIDSIZE[2]];PRESSUREGRIDSIZE[1]];PRESSUREGRIDSIZE[0]]>, time_step: i32) -> Vec<Vec<Vec<([f32;3],[f32;3])>>>{
     let mut color_grid: Box<[[[[f32; 3]; PRESSUREGRIDSIZE[2]]; PRESSUREGRIDSIZE[1]]; PRESSUREGRIDSIZE[0]]> =  box[[[[0.0; 3]; PRESSUREGRIDSIZE[2]]; PRESSUREGRIDSIZE[1]]; PRESSUREGRIDSIZE[0]]; 
-    let i:&mut i32=&mut 0;
-    while *i<MAXITERATIONSPERTIMEFRAME {
         //let direction_has_changed=false;
         //1) Predict u, v and w,
         let mut provisional_velocity_x = box VelocityGrid{grid: vec![vec![vec![0.0;PRESSUREGRIDSIZE[2]+2]; PRESSUREGRIDSIZE[1]+2]; PRESSUREGRIDSIZE[0]+1], dimension:0};
@@ -74,7 +72,8 @@ fn simulation_time_step(velocity_grid_x: &mut Box<VelocityGrid>, velocity_grid_y
         
         //2)Update boundary conditions(i.e. set walls)
         set_wall_boundary_conditions( &mut provisional_velocity_x,  &mut provisional_velocity_y,  &mut provisional_velocity_z, 1.0, time_step, &mut color_grid);
-
+        let i:&mut i32=&mut 0;
+    while *i<MAXITERATIONSPERTIMEFRAME {
         //3)Calculate pressure correction
         let pressure_correction: Box<[[[f32; PRESSUREGRIDSIZE[2]]; PRESSUREGRIDSIZE[1]]; PRESSUREGRIDSIZE[0]]>=calculate_pressure_correction(&provisional_velocity_x, &provisional_velocity_y, &provisional_velocity_z);
         println!("Pressure correction at (1, 1, 1): {}, pressure correction at (6, 6, 2): {}", pressure_correction[1][1][1], pressure_correction[6][6][2]);
@@ -109,7 +108,7 @@ fn simulation_time_step(velocity_grid_x: &mut Box<VelocityGrid>, velocity_grid_y
         //7) Update pressure
         update_pressure(pressure_grid, &pressure_correction);
     }  
-    return convert_velocities_to_collocated_grid_and_visualise([0,4,0], [PRESSUREGRIDSIZE[1]-1, 4, PRESSUREGRIDSIZE[2]-1], [19,1,19], velocity_grid_x, velocity_grid_y, velocity_grid_z, color_grid);
+    return convert_velocities_to_collocated_grid_and_visualise([0,0,0], [PRESSUREGRIDSIZE[0]-1, PRESSUREGRIDSIZE[1]-1, PRESSUREGRIDSIZE[2]-1], [5,5,5], velocity_grid_x, velocity_grid_y, velocity_grid_z, color_grid);
 }
 
 //min_coords and max_coords are the pressure coordinates of which we want to know the velocities(this function will determine those velocities by taking the average of nearby velocities)
@@ -237,8 +236,8 @@ fn set_wall_boundary_conditions(velocity_grid_x: &mut VelocityGrid, velocity_gri
     set_boundary_conditions_of_two_parallel_walls(velocity_grid_x, velocity_grid_y, velocity_grid_z, 0.0);
     set_boundary_conditions_of_two_parallel_walls(velocity_grid_y, velocity_grid_x, velocity_grid_z, 0.0);
     set_boundary_conditions_of_two_parallel_walls(velocity_grid_z, velocity_grid_x, velocity_grid_y, 0.0);
-    create_inflow_or_outflow(velocity_grid_x, velocity_grid_y, velocity_grid_z, [0,8,8], [0,12,12], -some_sigmoid_function(time_step), color_grid);
-    create_inflow_or_outflow(velocity_grid_z, velocity_grid_y, velocity_grid_x, [8,8,0], [12,12,0], some_sigmoid_function(time_step), color_grid);
+    create_inflow_or_outflow(velocity_grid_x, velocity_grid_y, velocity_grid_z, [0,22,22], [0,28,28], -some_sigmoid_function(time_step), color_grid);
+    create_inflow_or_outflow(velocity_grid_z, velocity_grid_y, velocity_grid_x, [22,22,0], [28,28,0], some_sigmoid_function(time_step), color_grid);
 } 
 
 fn some_sigmoid_function_f(time_step: f32)->f32{
