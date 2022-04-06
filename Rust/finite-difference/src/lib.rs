@@ -108,7 +108,7 @@ fn simulation_time_step(velocity_grid_x: &mut Box<VelocityGrid>, velocity_grid_y
         //7) Update pressure
         update_pressure(pressure_grid, &pressure_correction);
     }  
-    return convert_velocities_to_collocated_grid_and_visualise([0,0,0], [PRESSUREGRIDSIZE[0]-1, PRESSUREGRIDSIZE[1]-1, PRESSUREGRIDSIZE[2]-1], [5,5,5], velocity_grid_x, velocity_grid_y, velocity_grid_z, color_grid);
+    return convert_velocities_to_collocated_grid_and_visualise([0,4,0], [PRESSUREGRIDSIZE[0]-1, 4, PRESSUREGRIDSIZE[2]-1], [20,1,20], velocity_grid_x, velocity_grid_y, velocity_grid_z, color_grid);
 }
 
 //min_coords and max_coords are the pressure coordinates of which we want to know the velocities(this function will determine those velocities by taking the average of nearby velocities)
@@ -137,7 +137,7 @@ pub fn convert_velocities_to_collocated_grid_and_visualise(min_coords: [usize; 3
                 let vel_x=get_velocity_at_pressure_point(&velocity_grid_x, x*step_size[0], y*step_size[1], z*step_size[2]);
                 let vel_y=get_velocity_at_pressure_point(&velocity_grid_y, x*step_size[0], y*step_size[1], z*step_size[2]);
                 let vel_z=get_velocity_at_pressure_point(&velocity_grid_z, x*step_size[0], y*step_size[1], z*step_size[2]);
-                return_data[x][y][z]=([vel_x,  vel_y, vel_z], [((vel_x.powf(2.0)+vel_y.powf(2.0)+vel_z.powf(2.0))/max_vel_squared).sqrt(), 0.0, 0.0]/*color_grid[x *step_size[0]+min_coords[0]][y* step_size[1]+min_coords[1]][z*step_size[2]+min_coords[2]]*/);
+                return_data[x][y][z]=([vel_x,  vel_y, vel_z], [1.0, 1.0- ((vel_x.powf(2.0)+vel_y.powf(2.0)+vel_z.powf(2.0))/max_vel_squared).sqrt(), 0.0,]/*color_grid[x *step_size[0]+min_coords[0]][y* step_size[1]+min_coords[1]][z*step_size[2]+min_coords[2]]*/);
                 }
         }
     }
