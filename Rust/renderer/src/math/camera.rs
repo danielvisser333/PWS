@@ -60,9 +60,9 @@ impl Camera{
         self.matrix.matrix=self.projection*self.view;
     }
     ///Register mouse movement and update the camera
-    pub fn mouse_movement(&mut self, delta : (f64,f64)){
+    pub fn mouse_movement(&mut self, delta : (f64,f64), override_left_mouse: bool){
         let delta = (-delta.0/100.0,delta.1);
-        if self.left_mouse_button_pressed{
+        if self.left_mouse_button_pressed || override_left_mouse{
             //Horizontal movement
             let sin_x = cgmath::Angle::sin(Deg(delta.0 as f32*2.0));
             let cos_x = cgmath::Angle::cos(Deg(delta.0 as f32*2.0));

@@ -63,16 +63,16 @@ impl Renderer{
                                     shutdown_sender.send(RenderResult::NextStep).unwrap();
                                 }
                                 else if input.virtual_keycode == Some(VirtualKeyCode::W) && input.state == ElementState::Pressed{
-                                    renderer.camera.mouse_movement((-10.0, 0.0));
+                                    renderer.camera.mouse_movement((-10.0, 0.0), true);
                                 }
                                 else if input.virtual_keycode == Some(VirtualKeyCode::S) && input.state == ElementState::Pressed{
-                                    renderer.camera.mouse_movement((10.0, 0.0));
+                                    renderer.camera.mouse_movement((10.0, 0.0), true);
                                 }
                                 else if input.virtual_keycode == Some(VirtualKeyCode::A) && input.state == ElementState::Pressed{
-                                    renderer.camera.mouse_movement((0.0, -10.0));
+                                    renderer.camera.mouse_movement((0.0, -10.0), true);
                                 }
                                 else if input.virtual_keycode == Some(VirtualKeyCode::D) && input.state == ElementState::Pressed{
-                                    renderer.camera.mouse_movement((0.0, 10.0));
+                                    renderer.camera.mouse_movement((0.0, 10.0), true);
                                 }
                             }
                             WindowEvent::MouseWheel{delta, .. }=>{
@@ -124,7 +124,7 @@ impl Renderer{
                     Event::DeviceEvent{device_id:_,event}=>{
                         match event{
                             DeviceEvent::MouseMotion{delta}=>{
-                                renderer.camera.mouse_movement(delta);
+                                renderer.camera.mouse_movement(delta, false);
                             }
                             DeviceEvent::MouseWheel{delta} => {
                                 match delta{
