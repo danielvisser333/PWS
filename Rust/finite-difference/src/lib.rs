@@ -1,5 +1,3 @@
-#![feature(box_syntax)]
-
 use renderer::{Renderer, RenderResult};
 
 //Physical constants
@@ -25,10 +23,10 @@ pub struct VelocityGrid{
 
 pub fn initialize_simulation(){
     let renderer = Renderer::new(false);
-    let mut pressure_grid: Box<[[[f32; PRESSUREGRIDSIZE[2]]; PRESSUREGRIDSIZE[1]]; PRESSUREGRIDSIZE[0]]>= box[[[0.0; PRESSUREGRIDSIZE[2]]; PRESSUREGRIDSIZE[1]]; PRESSUREGRIDSIZE[0]];//pressureGrid[x][y][z] is the pressure at coordinates (x,y,z)
-    let mut velocity_x = box VelocityGrid{grid: vec![vec![vec![0.0;PRESSUREGRIDSIZE[2]+2]; PRESSUREGRIDSIZE[1]+2]; PRESSUREGRIDSIZE[0]+1], dimension:0};// z,y,x !!!
-    let mut velocity_y = box VelocityGrid{grid: vec![vec![vec![0.0;PRESSUREGRIDSIZE[2]+2]; PRESSUREGRIDSIZE[1]+1]; PRESSUREGRIDSIZE[0]+2], dimension:1}; 
-    let mut velocity_z = box VelocityGrid{grid: vec![vec![vec![0.0;PRESSUREGRIDSIZE[2]+1]; PRESSUREGRIDSIZE[1]+2]; PRESSUREGRIDSIZE[0]+2], dimension:2}; 
+    let mut pressure_grid: Box<[[[f32; PRESSUREGRIDSIZE[2]]; PRESSUREGRIDSIZE[1]]; PRESSUREGRIDSIZE[0]]>= Box::new([[[0.0; PRESSUREGRIDSIZE[2]]; PRESSUREGRIDSIZE[1]]; PRESSUREGRIDSIZE[0]]);//pressureGrid[x][y][z] is the pressure at coordinates (x,y,z)
+    let mut velocity_x = Box::new(VelocityGrid { grid: vec![vec![vec![0.0; PRESSUREGRIDSIZE[2] + 2]; PRESSUREGRIDSIZE[1] + 2]; PRESSUREGRIDSIZE[0] + 1], dimension: 0 });// z,y,x !!!
+    let mut velocity_y = Box::new(VelocityGrid { grid: vec![vec![vec![0.0; PRESSUREGRIDSIZE[2] + 2]; PRESSUREGRIDSIZE[1] + 1]; PRESSUREGRIDSIZE[0] + 2], dimension: 1 });
+    let mut velocity_z = Box::new(VelocityGrid { grid: vec![vec![vec![0.0; PRESSUREGRIDSIZE[2] + 1]; PRESSUREGRIDSIZE[1] + 2]; PRESSUREGRIDSIZE[0] + 2], dimension: 2 });
     
     initialize_pressure_grid(&mut pressure_grid);
     let mut i: i32=0;
@@ -56,12 +54,12 @@ fn initialize_pressure_grid(pressure_grid: &mut [[[f32; PRESSUREGRIDSIZE[2]];PRE
 }
 
 fn simulation_time_step(velocity_grid_x: &mut Box<VelocityGrid>, velocity_grid_y: &mut Box<VelocityGrid>, velocity_grid_z: &mut Box<VelocityGrid>,  pressure_grid: &mut Box<[[[f32; PRESSUREGRIDSIZE[2]];PRESSUREGRIDSIZE[1]];PRESSUREGRIDSIZE[0]]>, time_step: i32) -> Vec<Vec<Vec<([f32;3],[f32;3])>>>{
-    let mut color_grid: Box<[[[[f32; 3]; PRESSUREGRIDSIZE[2]]; PRESSUREGRIDSIZE[1]]; PRESSUREGRIDSIZE[0]]> =  box[[[[0.0; 3]; PRESSUREGRIDSIZE[2]]; PRESSUREGRIDSIZE[1]]; PRESSUREGRIDSIZE[0]]; 
+    let mut color_grid: Box<[[[[f32; 3]; PRESSUREGRIDSIZE[2]]; PRESSUREGRIDSIZE[1]]; PRESSUREGRIDSIZE[0]]> = Box::new([[[[0.0; 3]; PRESSUREGRIDSIZE[2]]; PRESSUREGRIDSIZE[1]]; PRESSUREGRIDSIZE[0]]);
         //let direction_has_changed=false;
         //1) Predict u, v and w,
-        let mut provisional_velocity_x = box VelocityGrid{grid: vec![vec![vec![0.0;PRESSUREGRIDSIZE[2]+2]; PRESSUREGRIDSIZE[1]+2]; PRESSUREGRIDSIZE[0]+1], dimension:0};
-        let mut provisional_velocity_y = box VelocityGrid{grid: vec![vec![vec![0.0;PRESSUREGRIDSIZE[2]+2]; PRESSUREGRIDSIZE[1]+1]; PRESSUREGRIDSIZE[0]+2], dimension:1}; 
-        let mut provisional_velocity_z = box VelocityGrid{grid: vec![vec![vec![0.0;PRESSUREGRIDSIZE[2]+1]; PRESSUREGRIDSIZE[1]+2]; PRESSUREGRIDSIZE[0]+2], dimension:2}; 
+        let mut provisional_velocity_x = Box::new(VelocityGrid { grid: vec![vec![vec![0.0; PRESSUREGRIDSIZE[2] + 2]; PRESSUREGRIDSIZE[1] + 2]; PRESSUREGRIDSIZE[0] + 1], dimension: 0 });
+        let mut provisional_velocity_y = Box::new(VelocityGrid { grid: vec![vec![vec![0.0; PRESSUREGRIDSIZE[2] + 2]; PRESSUREGRIDSIZE[1] + 1]; PRESSUREGRIDSIZE[0] + 2], dimension: 1 });
+        let mut provisional_velocity_z = Box::new(VelocityGrid { grid: vec![vec![vec![0.0; PRESSUREGRIDSIZE[2] + 1]; PRESSUREGRIDSIZE[1] + 2]; PRESSUREGRIDSIZE[0] + 2], dimension: 2 });
     
         //x-velocity
         predict_velocity(&mut provisional_velocity_x, &velocity_grid_x, &velocity_grid_y, &velocity_grid_z, pressure_grid);
@@ -168,7 +166,7 @@ fn predict_velocity(provisonal_velocity_field: &mut VelocityGrid, velocity_field
 }
 
 fn calculate_pressure_correction(x_velocity: & VelocityGrid, y_velocity: & VelocityGrid, z_velocity: & VelocityGrid)->Box<[[[f32; PRESSUREGRIDSIZE[2]]; PRESSUREGRIDSIZE[1]]; PRESSUREGRIDSIZE[0]]>{
-    let mut pressure_correction: Box<[[[f32; PRESSUREGRIDSIZE[2]]; PRESSUREGRIDSIZE[1]]; PRESSUREGRIDSIZE[0]]>=box [[[0.0; PRESSUREGRIDSIZE[2]]; PRESSUREGRIDSIZE[1]]; PRESSUREGRIDSIZE[0]];//Here we will store the pressure corrections.
+    let mut pressure_correction: Box<[[[f32; PRESSUREGRIDSIZE[2]]; PRESSUREGRIDSIZE[1]]; PRESSUREGRIDSIZE[0]]>= Box::new([[[0.0; PRESSUREGRIDSIZE[2]]; PRESSUREGRIDSIZE[1]]; PRESSUREGRIDSIZE[0]]);//Here we will store the pressure corrections.
     let constant_term_pressure_equation=RELEXATION*DENSITY*GRIDELEMENTSCALE/(6.0*TIMESTEPSIZE);//The lower part of the equation is this constant.
         for i in 0..PRESSUREGRIDSIZE[0] - 1{
             for j in 0..PRESSUREGRIDSIZE[1] - 1{
