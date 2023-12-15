@@ -17,8 +17,6 @@ use winit::{event_loop::{EventLoop, ControlFlow}, window::Window, event::{Event,
 use winit::platform::{unix::EventLoopExtUnix, run_return::EventLoopExtRunReturn};
 #[cfg(target_os="windows")]
 use winit::platform::{run_return::EventLoopExtRunReturn,windows::EventLoopExtWindows};
-#[cfg(target_os = "macos")]
-use winit::platform::macos::EventLoopExtMacOS;
 const MAX_FRAMES_IN_FLIGHT : usize = 2;
 
 pub struct Renderer{
@@ -36,11 +34,11 @@ impl Renderer{
         //Start the renderer on another thread
         thread_pool.spawn(move ||{
             println!("Created render thread");
-            let mut event_loop : EventLoop<()> = EventLoop::new();
+            let mut event_loop : EventLoop<()> = EventLoop::new_any_thread();
             let window = Window::new(&event_loop).expect("Failed to create render window");
             let mut renderer = RenderOnThread::new(&window, debug);
             let mut last_frame = std::time::Instant::now();
-            event_loop.run(move |event,_,control_flow|{
+            event_loop.run_return(|event,_,control_flow|{
                 match receiver_render_thread.try_recv(){
                     Ok(task) => {
                         match task{
