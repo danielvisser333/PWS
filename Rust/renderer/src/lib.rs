@@ -62,6 +62,18 @@ impl Renderer{
                                 else if input.virtual_keycode == Some(VirtualKeyCode::N) && input.state == ElementState::Pressed{
                                     shutdown_sender.send(RenderResult::NextStep).unwrap();
                                 }
+                                else if input.virtual_keycode == Some(VirtualKeyCode::W) && input.state == ElementState::Pressed{
+                                    renderer.camera.mouse_movement((-10.0, 0.0));
+                                }
+                                else if input.virtual_keycode == Some(VirtualKeyCode::S) && input.state == ElementState::Pressed{
+                                    renderer.camera.mouse_movement((10.0, 0.0));
+                                }
+                                else if input.virtual_keycode == Some(VirtualKeyCode::A) && input.state == ElementState::Pressed{
+                                    renderer.camera.mouse_movement((0.0, -10.0));
+                                }
+                                else if input.virtual_keycode == Some(VirtualKeyCode::D) && input.state == ElementState::Pressed{
+                                    renderer.camera.mouse_movement((0.0, 10.0));
+                                }
                             }
                             WindowEvent::MouseWheel{delta, .. }=>{
                                 match delta{
